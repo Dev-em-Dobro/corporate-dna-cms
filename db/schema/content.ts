@@ -1,0 +1,81 @@
+import {
+  pgTable,
+  uuid,
+  text,
+  jsonb,
+  timestamp,
+  index,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { contentTypeEnum, contentStatusEnum } from "./enums";
+import { users } from "./users";
+
+/**
+ * Base table for every content type. Type-specific fields live in `data` (JSONB,
+ * validated by the per-type Zod schema in lib/content). Facets that the read API
+ * must filter on are promoted to first-class columns (see caseStudyFacets).
+ */
+export const contentEntries = pgTable(
+  "content_entries",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    type: contentTypeEnum("type").notNull(),
+    slug: text("slug").notNull(),
+    locale: text("locale").notNull().default("en"),
+    // Groups locale variants of the same logical entry (multilingual-ready).
+    translationGroupId: uuid("translation_group_id").notNull().defaultRandom(),
+    status: contentStatusEnum("status").notNull().default("draft"),
+    // Pointer to the live version snapshot (no FK to avoid a circular constraint).
+    currentVersionId: uuid("current_version_id"),
+    data: jsonb("data")
+      .notNull()
+      .$type<Record<string, unknown>>()
+      .default(sql`'{}'::jsonb`),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("content_type_slug_locale_uq").on(t.type, t.slug, t.locale),
+    index("content_type_status_locale_idx").on(t.type, t.status, t.locale),
+    index("content_translation_group_idx").on(t.translationGroupId),
+  ],
+);
+
+/** Append-only version history. Every save/publish writes one row. */
+export const contentVersions = pgTable("content_versions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  entryId: uuid("entry_id")
+    .notNull()
+    .references(() => contentEntries.id, { onDelete: "cascade" }),
+  data: jsonb("data").notNull().$type<Record<string, unknown>>(),
+  statusAtSave: contentStatusEnum("status_at_save").notNull(),
+  authorId: uuid("author_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** 1:1 with a `case` entry — filterable facets for the case-study library. */
+export const caseStudyFacets = pgTable("case_study_facets", {
+  entryId: uuid("entry_id")
+    .primaryKey()
+    .references(() => contentEntries.id, { onDelete: "cascade" }),
+  industry: text("industry").array().notNull().default(sql`'{}'::text[]`),
+  service: text("service").array().notNull().default(sql`'{}'::text[]`),
+  regionSlugs: text("region_slugs").array().notNull().default(sql`'{}'::text[]`),
+  outcome: text("outcome").array().notNull().default(sql`'{}'::text[]`),
+});
+
+export type ContentEntry = typeof contentEntries.$inferSelect;
+export type NewContentEntry = typeof contentEntries.$inferInsert;
+export type ContentVersion = typeof contentVersions.$inferSelect;
+export type CaseStudyFacets = typeof caseStudyFacets.$inferSelect;
