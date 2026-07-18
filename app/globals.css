@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-poppins), system-ui, sans-serif;
+  --color-brand: #d84339;
+  --color-brand-dark: #b5342b;
+  --color-ink: #373234;
+  --color-paper: #f3f3f3;
+  --color-line: #ece9e6;
+  --color-muted: #6b6b6b;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: #3b3b3b;
+  background: #fff;
+}
