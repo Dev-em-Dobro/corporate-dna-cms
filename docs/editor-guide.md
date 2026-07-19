@@ -5,8 +5,37 @@ A short guide for the Corporate DNA team to run the platform without a developer
 ## Signing in
 
 1. Go to the admin URL and enter your email + password.
-2. Administrators then enter a 6-digit code from their authenticator app (MFA).
+2. Enter the 6-digit code from your authenticator app. The code is required for
+   **everyone**, not only administrators.
 3. You land on the **Dashboard** with content counts per type.
+
+> Codes are rate-limited to 15 attempts per hour **for your whole office
+> network**, not per person. If you see a rate-limit message, wait — retrying
+> makes it worse for everyone.
+
+### First sign-in (new accounts)
+
+New accounts arrive by **email invitation** — there is no "ask a developer to
+create my password". The flow is:
+
+1. Open the invitation email and follow the link.
+2. Choose your own password (no one else ever knows it).
+3. Scan the QR code with an authenticator app (Google Authenticator, 1Password,
+   Microsoft Authenticator…). Can't scan? Use **"Enter a key instead"** and type
+   the setup key manually.
+4. Enter the 6-digit code the app shows to finish. Until this step is done, the
+   CMS itself stays locked.
+
+### Forgot your password?
+
+Use **"Forgot your password?"** on the sign-in screen. A reset link arrives by
+email; it works once and expires. You will still need your authenticator code —
+a password reset never bypasses it.
+
+### Lost your phone / authenticator?
+
+Ask an administrator to **reset MFA** for your account (Users → your row). Your
+next sign-in walks you through scanning a fresh QR code.
 
 ## Content types
 
@@ -56,4 +85,8 @@ entry gains locale variants without any rebuild.
 - Write a clear title first — the URL slug is derived from it.
 - Add descriptive **alt text** to images for accessibility and SEO.
 - Preview before publishing.
-- Administrators: keep at least two admins so no one is ever locked out.
+- Administrators: keep at least two admins so no one is ever locked out. The
+  system refuses to demote, disable, or delete the last active administrator —
+  by design.
+- Administrators invite users by email and can change roles, disable accounts,
+  and reset MFA — but never set or see anyone's password or codes.
