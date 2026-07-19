@@ -1,29 +1,147 @@
+import "server-only";
+import { cache } from "react";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { users, type User } from "@/db/schema";
-import { readSession, type SessionPayload } from "./session";
+import { profiles, type Profile } from "@/db/schema";
+import { createClient } from "@/lib/supabase/server";
 import { AuthError } from "@/lib/errors";
 
 export { AuthError };
 
-/** Require any authenticated user. Throws AuthError(401) otherwise. */
-export async function requireSession(): Promise<SessionPayload> {
-  const s = await readSession();
-  if (!s) throw new AuthError(401, "Authentication required");
-  return s;
+export type Role = "admin" | "editor";
+
+export interface SessionPayload {
+  sub: string; // auth.users id — same value as profiles.id
+  role: Role;
+  email: string;
 }
 
-/** Require an administrator. Throws AuthError(403) for editors (FR-014). */
+/** Assurance state, derived from the JWT `aal` claim plus enrolled factors. */
+type Assurance =
+  | "none" // no factor enrolled yet -> bootstrap (FR-029)
+  | "pending" // factor enrolled, not satisfied this session
+  | "satisfied";
+
+interface Resolved {
+  session: SessionPayload;
+  profile: Profile;
+  assurance: Assurance;
+}
+
+/**
+ * Single resolution of "who is this request".
+ *
+ * Memoized with React `cache()` so a render pass that hits several guards pays
+ * for this once. `getClaims()` verifies the JWT against a cached JWKS — this
+ * project signs with ES256, so that costs no network round-trip. `getUser()`
+ * would contact the Auth server on every call, and `getSession()` is unsafe
+ * server-side because it never re-validates.
+ */
+const resolve = cache(async (): Promise<Resolved | null> => {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  if (error || !claims?.sub) return null;
+
+  const [profile] = await db
+    .select()
+    .from(profiles)
+    .where(eq(profiles.id, claims.sub));
+  if (!profile) return null;
+
+  /**
+   * Role and status come from the database on every request, never from the
+   * JWT. Supabase cannot revoke a live access token, so a JWT-borne value
+   * stays stale for up to a full token lifetime after an admin demotes or
+   * disables someone. This read is what makes FR-006 and FR-009 hold — and it
+   * is not a new cost, the previous implementation did the same.
+   */
+  const assurance = await resolveAssurance(supabase, claims.aal);
+
+  return {
+    session: {
+      sub: profile.id,
+      role: profile.role as Role,
+      email: profile.email,
+    },
+    profile,
+    assurance,
+  };
+});
+
+async function resolveAssurance(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  aal: unknown,
+): Promise<Assurance> {
+  if (aal === "aal2") return "satisfied";
+
+  // aal1 (or a JWT with no aal claim, which defaults to aal1) is ambiguous:
+  // the user may have no factor at all, or have one they have not satisfied.
+  // Only the enrolled-factor list separates those two, and they need opposite
+  // treatment — enrol vs. challenge.
+  const { data, error } = await supabase.auth.mfa.listFactors();
+  if (error) return "pending"; // fail closed
+  const verified = data?.totp?.filter((f) => f.status === "verified") ?? [];
+  return verified.length > 0 ? "pending" : "none";
+}
+
+/** Require an authenticated, enabled user with a satisfied second factor. */
+export async function requireSession(): Promise<SessionPayload> {
+  const r = await resolve();
+  if (!r) throw new AuthError(401, "Authentication required");
+
+  if (r.profile.status === "disabled") {
+    throw new AuthError(403, "Account disabled");
+  }
+
+  if (r.assurance === "none") {
+    throw new AuthError(403, "Second factor enrolment required", "enrol");
+  }
+  if (r.assurance === "pending") {
+    throw new AuthError(403, "Second factor required", "mfa");
+  }
+
+  return r.session;
+}
+
+/** Require an administrator. Throws AuthError(403) for editors. */
 export async function requireAdmin(): Promise<SessionPayload> {
   const s = await requireSession();
-  if (s.role !== "admin") throw new AuthError(403, "Administrator access required");
+  if (s.role !== "admin") {
+    throw new AuthError(403, "Administrator access required");
+  }
   return s;
 }
 
-/** Load the full user row for the current session, or null. */
-export async function currentUser(): Promise<User | null> {
-  const s = await readSession();
-  if (!s) return null;
-  const [u] = await db.select().from(users).where(eq(users.id, s.sub));
-  return u ?? null;
+/**
+ * The inverse guard: succeeds ONLY for an authenticated session that has no
+ * verified factor yet, and fails once one exists.
+ *
+ * This is the single place a password-only session is allowed through, so it
+ * is a named export rather than a branch hidden inside requireSession — it
+ * should be greppable, individually testable, and obvious in review.
+ */
+export async function requireEnrolmentBootstrap(): Promise<SessionPayload> {
+  const r = await resolve();
+  if (!r) throw new AuthError(401, "Authentication required");
+  if (r.profile.status === "disabled") {
+    throw new AuthError(403, "Account disabled");
+  }
+  if (r.assurance !== "none") {
+    throw new AuthError(403, "A second factor is already enrolled");
+  }
+  return r.session;
+}
+
+/** Load the full profile row for the current session, or null. */
+export async function currentUser(): Promise<Profile | null> {
+  const r = await resolve();
+  return r?.profile ?? null;
+}
+
+/** Assurance state without throwing — for UI routing decisions. */
+export async function currentAssurance(): Promise<Assurance | null> {
+  const r = await resolve();
+  return r?.assurance ?? null;
 }

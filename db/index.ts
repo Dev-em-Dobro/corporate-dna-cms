@@ -1,5 +1,5 @@
-import { drizzle } from "drizzle-orm/neon-serverless";
-import { Pool } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "./schema";
 
 const connectionString = process.env.DATABASE_URL;
@@ -9,10 +9,16 @@ if (!connectionString) {
   console.warn("[db] DATABASE_URL is not set — database calls will fail.");
 }
 
-// The pooled serverless driver supports multi-statement transactions, which the
-// entry service relies on (version snapshot + entry update must be atomic).
-const pool = new Pool({ connectionString });
+/**
+ * DATABASE_URL points at Supavisor in transaction mode (port 6543), which is
+ * what serverless needs. Transaction mode does not support prepared
+ * statements, hence `prepare: false` — without it queries fail once the pooler
+ * hands the connection to another client mid-session.
+ *
+ * Migrations use DIRECT_URL (port 5432) instead; see drizzle.config.ts.
+ */
+const client = postgres(connectionString ?? "", { prepare: false });
 
-export const db = drizzle(pool, { schema });
+export const db = drizzle(client, { schema });
 export type DB = typeof db;
 export * as tables from "./schema";

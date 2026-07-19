@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { readSession } from "@/lib/auth/session";
+import { requireSession, AuthError } from "@/lib/auth/guards";
 import AdminNav, { type NavItem } from "@/components/AdminNav";
 
 const NAV: (NavItem & { adminOnly?: boolean })[] = [
@@ -19,8 +19,23 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await readSession();
-  if (!session) redirect("/login");
+  /**
+   * This gate is convenience, not enforcement. Layouts do not re-render on
+   * navigation under Partial Rendering, and a layout check never extends to
+   * Server Actions defined in child pages. Every route handler calls its own
+   * guard — that is where the security boundary actually is.
+   */
+  let session;
+  try {
+    session = await requireSession();
+  } catch (e) {
+    if (e instanceof AuthError) {
+      if (e.next === "enrol") redirect("/auth/enrol");
+      if (e.next === "mfa") redirect("/login?step=mfa");
+      redirect("/login");
+    }
+    throw e;
+  }
 
   const items = NAV.filter((n) => !n.adminOnly || session.role === "admin");
 

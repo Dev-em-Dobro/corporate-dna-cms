@@ -39,8 +39,8 @@ way. Do not begin Phase 2 with any of them unresolved.
 - [x] T005 [P] ~~Resolve the deploy gate~~ **DONE 2026-07-18.** The gate was never failing: HEAD and both prior commits are authored `impulseaisolutions@gmail.com`. What did not match was the repo's `user.email` config (`roberto.rhd@gmail.com`), so the *next* commit would have broken it. Fixed by setting repo-local `user.name`/`user.email` to the Impulse identity, matching existing history
 - [x] T006 ~~Commit or revert the uncommitted working-tree changes~~ **DONE 2026-07-18.** Typecheck passed clean, so the work was checkpointed rather than discarded, in two commits by authorship: `65c4d88` (pre-existing admin UI overhaul + `components/ui` primitives) and `685341f` (Spec Kit tooling + this feature's design record). Working tree is clean
 - [x] T007 ~~Create the Supabase project and capture both connection strings~~ **DONE 2026-07-18.** Project exists; `DATABASE_URL` on Supavisor transaction mode (6543) and `DIRECT_URL` on 5432 are both set. Note `DIRECT_URL` targets the **pooler in session mode** (`...pooler.supabase.com:5432`), not the true direct host (`db.<ref>.supabase.co:5432`). This is deliberate and probably necessary — the true direct connection is IPv6-only without the paid IPv4 add-on, whereas session mode is IPv4 on all tiers and still supports prepared statements, so drizzle-kit migrations work through it. Revisit only if migrations behave oddly
-- [ ] T008 Install dependencies in `package.json`: add `@supabase/supabase-js`, `@supabase/ssr`, `postgres`
-- [ ] T009 Remove dead and superseded dependencies from `package.json`: `otplib`, `qrcode`, `@types/qrcode`, `@node-rs/argon2`, `@neondatabase/serverless`, and `next-auth` (the last is already dead — declared but imported nowhere)
+- [x] T008 Install dependencies in `package.json`: add `@supabase/supabase-js`, `@supabase/ssr`, `postgres`
+- [x] T009 Remove dead and superseded dependencies from `package.json`: `otplib`, `qrcode`, `@types/qrcode`, `@node-rs/argon2`, `@neondatabase/serverless`, and `next-auth` (the last is already dead — declared but imported nowhere)
 - [ ] T010 [P] Update `.env.example`: add `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DIRECT_URL`; remove `AUTH_SECRET` and `CMS_DISABLE_MFA`; keep `PREVIEW_TOKEN_SECRET`. Note in a comment that `AUTH_SECRET` must stay in the deployed environment until the rollback window closes
 
 **Checkpoint**: unknowns resolved, dependencies aligned, clean tree.
@@ -56,27 +56,27 @@ user story depends on all of it.
 
 ### Supabase clients
 
-- [ ] T011 [P] Create `lib/supabase/client.ts` exporting `createBrowserClient` per the `vercel/next.js` `examples/with-supabase` template
-- [ ] T012 [P] Create `lib/supabase/server.ts` exporting an **async** `createClient()` that awaits `cookies()` and uses the `getAll`/`setAll` cookie adapter. The `setAll` call must be wrapped in try/catch for Server Component contexts. Do not store the client in a module-level variable — Fluid Compute reuses instances
-- [ ] T013 [P] Create `lib/supabase/admin.ts` exporting a `service_role` client marked `server-only`. This key must never reach the browser
-- [ ] T014 Create `lib/supabase/proxy.ts` exporting `updateSession(request)` per the template. **Do not place any code between `createServerClient` and `getClaims()`** — doing so causes intermittent random sign-outs that are very hard to debug
-- [ ] T015 Create root `proxy.ts` (Next.js 16 convention — **not** `middleware.ts`) delegating to `updateSession`, with a matcher excluding `_next/static`, `_next/image`, `favicon.ico` and image extensions
+- [x] T011 [P] Create `lib/supabase/client.ts` exporting `createBrowserClient` per the `vercel/next.js` `examples/with-supabase` template
+- [x] T012 [P] Create `lib/supabase/server.ts` exporting an **async** `createClient()` that awaits `cookies()` and uses the `getAll`/`setAll` cookie adapter. The `setAll` call must be wrapped in try/catch for Server Component contexts. Do not store the client in a module-level variable — Fluid Compute reuses instances
+- [x] T013 [P] Create `lib/supabase/admin.ts` exporting a `service_role` client marked `server-only`. This key must never reach the browser
+- [x] T014 Create `lib/supabase/proxy.ts` exporting `updateSession(request)` per the template. **Do not place any code between `createServerClient` and `getClaims()`** — doing so causes intermittent random sign-outs that are very hard to debug
+- [x] T015 Create root `proxy.ts` (Next.js 16 convention — **not** `middleware.ts`) delegating to `updateSession`, with a matcher excluding `_next/static`, `_next/image`, `favicon.ico` and image extensions
 
 ### Database
 
-- [ ] T016 Rewrite `db/index.ts` from `drizzle-orm/neon-serverless` to `drizzle-orm/postgres-js`, using `postgres(DATABASE_URL, { prepare: false })`. `prepare: false` is mandatory — Supavisor transaction mode breaks prepared statements
-- [ ] T017 Update `drizzle.config.ts`: set `schemaFilter: ['public']`, `entities: { roles: { provider: 'supabase' } }`, and point `dbCredentials.url` at `DIRECT_URL` (not the pooled 6543 string)
-- [ ] T018 Rename `db/schema/users.ts` to `db/schema/profiles.ts`. Set `id` as `uuid` primary key referencing `authUsers.id` from `drizzle-orm/supabase` with `onDelete: 'cascade'`; drop `passwordHash`, `totpSecret` and `mfaEnabled`; keep `email`, `role`, `status`, `lastLoginAt`, `createdAt`, `updatedAt`. Renaming away from `users` also sidesteps a reported `search_path` collision with `auth.users`
-- [ ] T019 Add `actorEmail` (`text`, nullable) to `db/schema/audit.ts`, and set `actorId` to `onDelete: 'set null'`. **This deliberately diverges from Supabase's documented blanket cascade**, which would erase audit history on user deletion (FR-019)
-- [ ] T020 [P] Set `onDelete: 'set null'` on `createdBy` and `updatedBy` in `db/schema/content.ts` (`contentEntries`) and on `authorId` (`contentVersions`). Content must outlive its author
-- [ ] T021 [P] Set `onDelete: 'set null'` on `uploadedBy` in `db/schema/media.ts`
-- [ ] T022 Update `db/schema/index.ts` exports for the `users` → `profiles` rename
-- [ ] T023 Generate and apply the fresh schema: `npm run db:generate` then `npm run db:migrate` against `DIRECT_URL`. Review the generated SQL and **strip any `CREATE SCHEMA "auth"` statement** — that schema is Supabase-owned and the statement will fail
+- [x] T016 Rewrite `db/index.ts` from `drizzle-orm/neon-serverless` to `drizzle-orm/postgres-js`, using `postgres(DATABASE_URL, { prepare: false })`. `prepare: false` is mandatory — Supavisor transaction mode breaks prepared statements
+- [x] T017 Update `drizzle.config.ts`: set `schemaFilter: ['public']`, `entities: { roles: { provider: 'supabase' } }`, and point `dbCredentials.url` at `DIRECT_URL` (not the pooled 6543 string)
+- [x] T018 Rename `db/schema/users.ts` to `db/schema/profiles.ts`. Set `id` as `uuid` primary key referencing `authUsers.id` from `drizzle-orm/supabase` with `onDelete: 'cascade'`; drop `passwordHash`, `totpSecret` and `mfaEnabled`; keep `email`, `role`, `status`, `lastLoginAt`, `createdAt`, `updatedAt`. Renaming away from `users` also sidesteps a reported `search_path` collision with `auth.users`
+- [x] T019 Add `actorEmail` (`text`, nullable) to `db/schema/audit.ts`, and set `actorId` to `onDelete: 'set null'`. **This deliberately diverges from Supabase's documented blanket cascade**, which would erase audit history on user deletion (FR-019)
+- [x] T020 [P] Set `onDelete: 'set null'` on `createdBy` and `updatedBy` in `db/schema/content.ts` (`contentEntries`) and on `authorId` (`contentVersions`). Content must outlive its author
+- [x] T021 [P] Set `onDelete: 'set null'` on `uploadedBy` in `db/schema/media.ts`
+- [x] T022 Update `db/schema/index.ts` exports for the `users` → `profiles` rename
+- [x] T023 Generate and apply the fresh schema: `npm run db:generate` then `npm run db:migrate` against `DIRECT_URL`. Review the generated SQL and **strip any `CREATE SCHEMA "auth"` statement** — that schema is Supabase-owned and the statement will fail
 
 ### Guards — the enforcement point
 
-- [ ] T024 Rewrite `lib/auth/guards.ts` internals over `getClaims()` in a `server-only` module wrapped in React `cache()`. Preserve the exported signatures of `requireSession`, `requireAdmin` and `currentUser` so the 13 admin route call sites need no changes. Read `role` and `status` from `profiles` on every call — **never** from a JWT claim, because access tokens cannot be revoked before expiry. `getSession()` must not appear anywhere in server code
-- [ ] T025 Gut `lib/auth/session.ts` down to `createPreviewToken` / `verifyPreviewToken` only, and delete `lib/auth/totp.ts` and `lib/auth/password.ts`. Preview tokens keep using `PREVIEW_TOKEN_SECRET` and stay out of scope
+- [x] T024 Rewrite `lib/auth/guards.ts` internals over `getClaims()` in a `server-only` module wrapped in React `cache()`. Preserve the exported signatures of `requireSession`, `requireAdmin` and `currentUser` so the 13 admin route call sites need no changes. Read `role` and `status` from `profiles` on every call — **never** from a JWT claim, because access tokens cannot be revoked before expiry. `getSession()` must not appear anywhere in server code
+- [x] T025 Gut `lib/auth/session.ts` down to `createPreviewToken` / `verifyPreviewToken` only, and delete `lib/auth/totp.ts` and `lib/auth/password.ts`. Preview tokens keep using `PREVIEW_TOKEN_SECRET` and stay out of scope
 
 **Checkpoint**: the app boots, the database is reachable, and guards resolve identity. User stories can now begin.
 
@@ -102,14 +102,14 @@ that started this whole effort.
 
 ### Implementation for User Story 1
 
-- [ ] T029 [US1] Add `requireEnrolmentBootstrap()` to `lib/auth/guards.ts`: succeeds only for an authenticated session with **no verified factor**, fails once one exists. Keep it a separate named export rather than a branch inside `requireSession` — this is the one place a password-only session is allowed through, and it should be greppable and individually testable
-- [ ] T030 [US1] Implement `POST /api/auth/mfa/enrol` in `app/api/auth/mfa/enrol/route.ts`: guard with `requireEnrolmentBootstrap`, call `listFactors()` and `unenroll()` any pre-existing **unverified** factor, then `mfa.enroll({ factorType: 'totp' })`. Return `qrCodeSvg`, `secret`, `uri`, `factorId`. The unenroll step is what makes T027 pass
-- [ ] T031 [US1] Implement `POST /api/auth/mfa/enrol/confirm` in `app/api/auth/mfa/enrol/confirm/route.ts` calling `mfa.challengeAndVerify`. On success the session becomes `aal2` and Supabase signs out all other sessions — expected, not a bug
+- [x] T029 [US1] Add `requireEnrolmentBootstrap()` to `lib/auth/guards.ts`: succeeds only for an authenticated session with **no verified factor**, fails once one exists. Keep it a separate named export rather than a branch inside `requireSession` — this is the one place a password-only session is allowed through, and it should be greppable and individually testable
+- [x] T030 [US1] Implement `POST /api/auth/mfa/enrol` in `app/api/auth/mfa/enrol/route.ts`: guard with `requireEnrolmentBootstrap`, call `listFactors()` and `unenroll()` any pre-existing **unverified** factor, then `mfa.enroll({ factorType: 'totp' })`. Return `qrCodeSvg`, `secret`, `uri`, `factorId`. The unenroll step is what makes T027 pass
+- [x] T031 [US1] Implement `POST /api/auth/mfa/enrol/confirm` in `app/api/auth/mfa/enrol/confirm/route.ts` calling `mfa.challengeAndVerify`. On success the session becomes `aal2` and Supabase signs out all other sessions — expected, not a bug
 - [ ] T032 [US1] Create the enrolment screen at `app/auth/enrol/page.tsx`: render `qrCodeSvg` as a data URL in an `<img>`, show the secret as manual-entry fallback (FR-003), and accept the confirmation code
 - [ ] T033 [US1] Route the bootstrap state from `app/(admin)/layout.tsx` to `/auth/enrol`, and refuse every other admin surface from that state
-- [ ] T034 [US1] Add `auth.mfa_enrolled`, `auth.bootstrap_enter` and `auth.bootstrap_exit` audit actions through `lib/audit/log.ts` (FR-031)
-- [ ] T035 [US1] Add `actorEmail` capture to `writeAudit()` in `lib/audit/log.ts` so audit rows stay human-readable after the referenced profile is deleted
-- [ ] T036 [US1] Rewrite `scripts/seed-admin.ts` over `auth.admin.createUser()`. It can no longer generate a TOTP secret — Supabase has no API to enrol a factor on another user's behalf. The seeded admin lands in the bootstrap state and enrols on first sign-in (FR-022)
+- [x] T034 [US1] Add `auth.mfa_enrolled`, `auth.bootstrap_enter` and `auth.bootstrap_exit` audit actions through `lib/audit/log.ts` (FR-031)
+- [x] T035 [US1] Add `actorEmail` capture to `writeAudit()` in `lib/audit/log.ts` so audit rows stay human-readable after the referenced profile is deleted
+- [x] T036 [US1] Rewrite `scripts/seed-admin.ts` over `auth.admin.createUser()`. It can no longer generate a TOTP secret — Supabase has no API to enrol a factor on another user's behalf. The seeded admin lands in the bootstrap state and enrols on first sign-in (FR-022)
 - [ ] T037 [US1] Surface the platform rate limit in the enrolment UI: MFA challenge/verify is capped at **15/hour per IP address**, shared by everyone behind the same egress IP and not configurable. A generic "try again later" is actively misleading here
 
 **Checkpoint**: a user can enrol a factor by scanning. US1 is independently demonstrable.
@@ -133,13 +133,13 @@ route with only the password step satisfied and confirm refusal.
 
 ### Implementation for User Story 2
 
-- [ ] T042 [US2] Rewrite `app/api/auth/login/route.ts`: sign in with password, then return `next: 'mfa' | 'enrol' | 'done'` derived from the `currentLevel`/`nextLevel` pair. **Remove `challengeId`** — the custom 5-minute challenge JWT is retired. Refuse disabled accounts indistinguishably from bad credentials (FR-006)
-- [ ] T043 [US2] Rewrite `app/api/auth/mfa/route.ts` to accept `{ code }` only, resolving the pending challenge from the `aal1` session. Map Supabase's 429 to a message that names the per-IP limit rather than a generic retry hint
-- [ ] T044 [US2] Rewrite `app/api/auth/logout/route.ts` to call `signOut({ scope: 'local' })` **explicitly**. Supabase defaults to `global`, which would sign the user out of every device — a silent regression
+- [x] T042 [US2] Rewrite `app/api/auth/login/route.ts`: sign in with password, then return `next: 'mfa' | 'enrol' | 'done'` derived from the `currentLevel`/`nextLevel` pair. **Remove `challengeId`** — the custom 5-minute challenge JWT is retired. Refuse disabled accounts indistinguishably from bad credentials (FR-006)
+- [x] T043 [US2] Rewrite `app/api/auth/mfa/route.ts` to accept `{ code }` only, resolving the pending challenge from the `aal1` session. Map Supabase's 429 to a message that names the per-IP limit rather than a generic retry hint
+- [x] T044 [US2] Rewrite `app/api/auth/logout/route.ts` to call `signOut({ scope: 'local' })` **explicitly**. Supabase defaults to `global`, which would sign the user out of every device — a silent regression
 - [ ] T045 [US2] Update `app/login/page.tsx` to branch on `next` instead of on the presence of a `challengeId`, routing to the challenge or to enrolment
-- [ ] T046 [US2] Enforce the assurance level in `requireSession` / `requireAdmin` in `lib/auth/guards.ts`, throwing `AuthError(403)` carrying `next` so callers can redirect to challenge or enrolment rather than dead-ending. Supabase's guidance is to redirect to re-authentication, not to reject outright
-- [ ] T047 [US2] Update `app/(admin)/layout.tsx` from `readSession` to the guard DAL
-- [ ] T048 [US2] Audit `auth.login`, `auth.mfa_fail` and `auth.logout` through `lib/audit/log.ts`, and write `lastLoginAt` on full-assurance sign-in
+- [x] T046 [US2] Enforce the assurance level in `requireSession` / `requireAdmin` in `lib/auth/guards.ts`, throwing `AuthError(403)` carrying `next` so callers can redirect to challenge or enrolment rather than dead-ending. Supabase's guidance is to redirect to re-authentication, not to reject outright
+- [x] T047 [US2] Update `app/(admin)/layout.tsx` from `readSession` to the guard DAL
+- [x] T048 [US2] Audit `auth.login`, `auth.mfa_fail` and `auth.logout` through `lib/audit/log.ts`, and write `lastLoginAt` on full-assurance sign-in
 - [ ] T049 [US2] Sweep every Server Action and route handler for an explicit guard call. Proxy matcher coverage does **not** reliably extend to Server Actions — they are POSTs to the route they live in — and a page-level check does not extend to actions defined within it
 - [ ] T050 [US2] Rewrite the auth setup in the existing integration suites (`tests/integration/us1-publish-flow.test.ts`, `us2-no-draft-leak.test.ts`, `us4-version-restore.test.ts`, `us-conflict.test.ts`). They authenticate against the retired session mechanism and will fail wholesale otherwise — budget for this, it is not incidental
 
@@ -162,14 +162,14 @@ user's access changes on their next request.
 
 ### Implementation for User Story 4
 
-- [ ] T054 [US4] Rewrite `createUser` in `lib/users/service.ts` as an invitation over `auth.admin.inviteUserByEmail()`. **Remove the `password` parameter entirely** — administrators must never set another user's password (FR-014). Create the `profiles` row with `status: 'invited'`, making that status real for the first time
-- [ ] T055 [US4] Add `resetMfa(userId)` to `lib/users/service.ts` over `auth.admin.mfa.deleteFactor()`, which terminates all the user's sessions when the factor was verified. Verify the exact argument shape against the installed `@supabase/supabase-js` typings — the reference page for this method 404s and the signature is corroborated only indirectly
-- [ ] T056 [US4] Add `disableUser(userId)` to `lib/users/service.ts` as the **single choke-point** that sets `profiles.status = 'disabled'` **and** applies a Supabase ban together. Neither alone is sufficient: the ban stops token refresh, the status is what the guard enforces per request
-- [ ] T057 [US4] Update `updateUser` in `lib/users/service.ts` to drop the auto-TOTP-enrolment-on-promotion branch. Promoting someone to administrator now leaves them in the bootstrap state to enrol for themselves — there is no API to enrol a factor on another user's behalf
-- [ ] T058 [US4] Extend the last-admin safeguard in `lib/users/service.ts` to cover deletion and Supabase-side bans, not only role and status changes (FR-012)
-- [ ] T059 [US4] Update `app/api/admin/users/route.ts` and `app/api/admin/users/[id]/route.ts` for the new service surface: no `password` in, no `totpUri`/`totpSecret` out
+- [x] T054 [US4] Rewrite `createUser` in `lib/users/service.ts` as an invitation over `auth.admin.inviteUserByEmail()`. **Remove the `password` parameter entirely** — administrators must never set another user's password (FR-014). Create the `profiles` row with `status: 'invited'`, making that status real for the first time
+- [x] T055 [US4] Add `resetMfa(userId)` to `lib/users/service.ts` over `auth.admin.mfa.deleteFactor()`, which terminates all the user's sessions when the factor was verified. Verify the exact argument shape against the installed `@supabase/supabase-js` typings — the reference page for this method 404s and the signature is corroborated only indirectly
+- [x] T056 [US4] Add `disableUser(userId)` to `lib/users/service.ts` as the **single choke-point** that sets `profiles.status = 'disabled'` **and** applies a Supabase ban together. Neither alone is sufficient: the ban stops token refresh, the status is what the guard enforces per request
+- [x] T057 [US4] Update `updateUser` in `lib/users/service.ts` to drop the auto-TOTP-enrolment-on-promotion branch. Promoting someone to administrator now leaves them in the bootstrap state to enrol for themselves — there is no API to enrol a factor on another user's behalf
+- [x] T058 [US4] Extend the last-admin safeguard in `lib/users/service.ts` to cover deletion and Supabase-side bans, not only role and status changes (FR-012)
+- [x] T059 [US4] Update `app/api/admin/users/route.ts` and `app/api/admin/users/[id]/route.ts` for the new service surface: no `password` in, no `totpUri`/`totpSecret` out
 - [ ] T060 [US4] Rewrite the enrolment panel in `components/UsersManager.tsx`. The "share this securely" `otpauth://` block is removed entirely — administrators no longer receive a secret to hand over. Replace with invitation status and an MFA-reset action
-- [ ] T061 [US4] Audit `user.invited`, `user.mfa_reset`, `user.disabled` and `user.role_changed` through `lib/audit/log.ts`
+- [x] T061 [US4] Audit `user.invited`, `user.mfa_reset`, `user.disabled` and `user.role_changed` through `lib/audit/log.ts`
 - [ ] T062 [US4] Implement `GET /api/auth/confirm` in `app/auth/confirm/route.ts` using `verifyOtp({ type, token_hash })` — the `token_hash` flow, not `exchangeCodeForSession` — so invitation links resolve
 
 **Checkpoint**: the full user lifecycle works without engineering involvement.

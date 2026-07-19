@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/auth/guards";
-import { updateUser } from "@/lib/users/service";
+import { updateUser, resetMfa } from "@/lib/users/service";
 import { writeAudit } from "@/lib/audit/log";
 import { jsonOk, jsonError, handleError } from "@/lib/http";
 
@@ -23,18 +23,48 @@ export async function PUT(req: NextRequest, ctx: Ctx) {
     if (patch.role === undefined && patch.status === undefined)
       return jsonError(422, "Nothing to update");
 
-    const { user, totpUri } = await updateUser(id, patch);
+    const user = await updateUser(id, patch);
     await writeAudit({
       actorId: admin.sub,
-      action: "user.update",
+      actorEmail: admin.email,
+      action: patch.status === "disabled" ? "user.disabled" : "user.update",
       targetType: "user",
       targetId: id,
       metadata: patch,
     });
     return jsonOk({
       user: { id: user.id, email: user.email, role: user.role, status: user.status },
-      totpUri,
     });
+  } catch (e) {
+    return handleError(e);
+  }
+}
+
+/**
+ * Reset a user's second factor — for a lost or replaced phone.
+ *
+ * Deleting a verified factor signs the user out of every active session, so
+ * the old factor stops working immediately rather than at the end of their
+ * current session. They land in the bootstrap state and enrol again.
+ */
+export async function POST(req: NextRequest, ctx: Ctx) {
+  try {
+    const admin = await requireAdmin();
+    const { id } = await ctx.params;
+    const body = await req.json().catch(() => ({}));
+    if (body?.action !== "reset-mfa") {
+      return jsonError(422, "Unsupported action");
+    }
+
+    await resetMfa(id);
+    await writeAudit({
+      actorId: admin.sub,
+      actorEmail: admin.email,
+      action: "user.mfa_reset",
+      targetType: "user",
+      targetId: id,
+    });
+    return jsonOk({ ok: true });
   } catch (e) {
     return handleError(e);
   }

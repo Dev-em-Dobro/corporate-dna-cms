@@ -2,18 +2,15 @@ CREATE TYPE "public"."content_status" AS ENUM('draft', 'published', 'archived');
 CREATE TYPE "public"."content_type" AS ENUM('case', 'solution', 'person', 'region', 'insight', 'page_5h', 'page_book', 'page_awards', 'page_legal');--> statement-breakpoint
 CREATE TYPE "public"."role" AS ENUM('admin', 'editor');--> statement-breakpoint
 CREATE TYPE "public"."user_status" AS ENUM('active', 'invited', 'disabled');--> statement-breakpoint
-CREATE TABLE "users" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+CREATE TABLE "profiles" (
+	"id" uuid PRIMARY KEY NOT NULL,
 	"email" text NOT NULL,
-	"password_hash" text,
 	"role" "role" DEFAULT 'editor' NOT NULL,
-	"mfa_enabled" boolean DEFAULT false NOT NULL,
-	"totp_secret" text,
 	"status" "user_status" DEFAULT 'invited' NOT NULL,
 	"last_login_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "users_email_unique" UNIQUE("email")
+	CONSTRAINT "profiles_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
 CREATE TABLE "case_study_facets" (
@@ -67,6 +64,7 @@ CREATE TABLE "media_assets" (
 CREATE TABLE "audit_log" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"actor_id" uuid,
+	"actor_email" text,
 	"action" text NOT NULL,
 	"target_type" text,
 	"target_id" uuid,
@@ -83,13 +81,14 @@ CREATE TABLE "webhook_endpoints" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+ALTER TABLE "profiles" ADD CONSTRAINT "profiles_id_auth_users_fk" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "case_study_facets" ADD CONSTRAINT "case_study_facets_entry_id_content_entries_id_fk" FOREIGN KEY ("entry_id") REFERENCES "public"."content_entries"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "content_entries" ADD CONSTRAINT "content_entries_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "content_entries" ADD CONSTRAINT "content_entries_updated_by_users_id_fk" FOREIGN KEY ("updated_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "content_entries" ADD CONSTRAINT "content_entries_created_by_profiles_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "content_entries" ADD CONSTRAINT "content_entries_updated_by_profiles_id_fk" FOREIGN KEY ("updated_by") REFERENCES "public"."profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "content_versions" ADD CONSTRAINT "content_versions_entry_id_content_entries_id_fk" FOREIGN KEY ("entry_id") REFERENCES "public"."content_entries"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "content_versions" ADD CONSTRAINT "content_versions_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "media_assets" ADD CONSTRAINT "media_assets_uploaded_by_users_id_fk" FOREIGN KEY ("uploaded_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "audit_log" ADD CONSTRAINT "audit_log_actor_id_users_id_fk" FOREIGN KEY ("actor_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "content_versions" ADD CONSTRAINT "content_versions_author_id_profiles_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "media_assets" ADD CONSTRAINT "media_assets_uploaded_by_profiles_id_fk" FOREIGN KEY ("uploaded_by") REFERENCES "public"."profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "audit_log" ADD CONSTRAINT "audit_log_actor_id_profiles_id_fk" FOREIGN KEY ("actor_id") REFERENCES "public"."profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE UNIQUE INDEX "content_type_slug_locale_uq" ON "content_entries" USING btree ("type","slug","locale");--> statement-breakpoint
 CREATE INDEX "content_type_status_locale_idx" ON "content_entries" USING btree ("type","status","locale");--> statement-breakpoint
 CREATE INDEX "content_translation_group_idx" ON "content_entries" USING btree ("translation_group_id");

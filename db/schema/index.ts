@@ -1,5 +1,5 @@
 export * from "./enums";
-export * from "./users";
+export * from "./profiles";
 export * from "./content";
 export * from "./media";
 export * from "./audit";

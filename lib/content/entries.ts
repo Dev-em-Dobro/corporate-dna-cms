@@ -5,7 +5,7 @@ import {
   contentVersions,
   caseStudyFacets,
   mediaAssets,
-  users,
+  profiles,
   type ContentEntry,
 } from "@/db/schema";
 import { ConflictError, NotFoundError } from "@/lib/errors";
@@ -378,10 +378,10 @@ export async function listVersions(entryId: string) {
       id: contentVersions.id,
       statusAtSave: contentVersions.statusAtSave,
       createdAt: contentVersions.createdAt,
-      authorEmail: users.email,
+      authorEmail: profiles.email,
     })
     .from(contentVersions)
-    .leftJoin(users, eq(users.id, contentVersions.authorId))
+    .leftJoin(profiles, eq(profiles.id, contentVersions.authorId))
     .where(eq(contentVersions.entryId, entryId))
     .orderBy(desc(contentVersions.createdAt));
 }

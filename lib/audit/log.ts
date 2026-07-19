@@ -4,6 +4,12 @@ import { desc, eq, and, SQL } from "drizzle-orm";
 
 export interface AuditInput {
   actorId?: string | null;
+  /**
+   * Snapshot of the actor's email at write time. Callers that know it should
+   * pass it: `actor_id` is `set null` on user deletion, so without this the
+   * row survives but becomes anonymous and unreadable.
+   */
+  actorEmail?: string | null;
   action: string;
   targetType?: string | null;
   targetId?: string | null;
@@ -12,11 +18,12 @@ export interface AuditInput {
 
 /**
  * The single choke-point for audit writes. Every mutation and auth event calls
- * this so audit coverage is 100% (FR-016 / SC-005).
+ * this so audit coverage is 100%.
  */
 export async function writeAudit(input: AuditInput): Promise<void> {
   await db.insert(auditLog).values({
     actorId: input.actorId ?? null,
+    actorEmail: input.actorEmail ?? null,
     action: input.action,
     targetType: input.targetType ?? null,
     targetId: input.targetId ?? null,

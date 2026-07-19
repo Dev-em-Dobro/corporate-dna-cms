@@ -6,7 +6,7 @@ import {
   integer,
   timestamp,
 } from "drizzle-orm/pg-core";
-import { users } from "./users";
+import { profiles } from "./profiles";
 
 /** Uploaded image/document. Binaries live in Bunny.net; only metadata here. */
 export const mediaAssets = pgTable("media_assets", {
@@ -19,7 +19,7 @@ export const mediaAssets = pgTable("media_assets", {
   bunnyPath: text("bunny_path").notNull(),
   deliveryUrl: text("delivery_url").notNull(),
   altText: text("alt_text"),
-  uploadedBy: uuid("uploaded_by").references(() => users.id),
+  uploadedBy: uuid("uploaded_by").references(() => profiles.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

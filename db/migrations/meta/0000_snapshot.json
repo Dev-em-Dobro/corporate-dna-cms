@@ -1,31 +1,24 @@
 {
-  "id": "e78cf013-499b-447f-8369-099c2c10ece5",
+  "id": "be4575b5-ed6f-4274-954e-09bd6fe3ff75",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.users": {
-      "name": "users",
+    "public.profiles": {
+      "name": "profiles",
       "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "uuid",
           "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
+          "notNull": true
         },
         "email": {
           "name": "email",
           "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "password_hash": {
-          "name": "password_hash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "role": {
           "name": "role",
@@ -34,19 +27,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'editor'"
-        },
-        "mfa_enabled": {
-          "name": "mfa_enabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "totp_secret": {
-          "name": "totp_secret",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "status": {
           "name": "status",
@@ -78,11 +58,26 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "profiles_id_auth_users_fk": {
+          "name": "profiles_id_auth_users_fk",
+          "tableFrom": "profiles",
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "users_email_unique": {
-          "name": "users_email_unique",
+        "profiles_email_unique": {
+          "name": "profiles_email_unique",
           "nullsNotDistinct": false,
           "columns": [
             "email"
@@ -324,30 +319,30 @@
         }
       },
       "foreignKeys": {
-        "content_entries_created_by_users_id_fk": {
-          "name": "content_entries_created_by_users_id_fk",
+        "content_entries_created_by_profiles_id_fk": {
+          "name": "content_entries_created_by_profiles_id_fk",
           "tableFrom": "content_entries",
-          "tableTo": "users",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "set null",
           "onUpdate": "no action"
         },
-        "content_entries_updated_by_users_id_fk": {
-          "name": "content_entries_updated_by_users_id_fk",
+        "content_entries_updated_by_profiles_id_fk": {
+          "name": "content_entries_updated_by_profiles_id_fk",
           "tableFrom": "content_entries",
-          "tableTo": "users",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -416,17 +411,17 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "content_versions_author_id_users_id_fk": {
-          "name": "content_versions_author_id_users_id_fk",
+        "content_versions_author_id_profiles_id_fk": {
+          "name": "content_versions_author_id_profiles_id_fk",
           "tableFrom": "content_versions",
-          "tableTo": "users",
+          "tableTo": "profiles",
           "columnsFrom": [
             "author_id"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -511,17 +506,17 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "media_assets_uploaded_by_users_id_fk": {
-          "name": "media_assets_uploaded_by_users_id_fk",
+        "media_assets_uploaded_by_profiles_id_fk": {
+          "name": "media_assets_uploaded_by_profiles_id_fk",
           "tableFrom": "media_assets",
-          "tableTo": "users",
+          "tableTo": "profiles",
           "columnsFrom": [
             "uploaded_by"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -545,6 +540,12 @@
         "actor_id": {
           "name": "actor_id",
           "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actor_email": {
+          "name": "actor_email",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -582,17 +583,17 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "audit_log_actor_id_users_id_fk": {
-          "name": "audit_log_actor_id_users_id_fk",
+        "audit_log_actor_id_profiles_id_fk": {
+          "name": "audit_log_actor_id_profiles_id_fk",
           "tableFrom": "audit_log",
-          "tableTo": "users",
+          "tableTo": "profiles",
           "columnsFrom": [
             "actor_id"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },

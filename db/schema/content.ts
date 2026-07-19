@@ -9,7 +9,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { contentTypeEnum, contentStatusEnum } from "./enums";
-import { users } from "./users";
+import { profiles } from "./profiles";
 
 /**
  * Base table for every content type. Type-specific fields live in `data` (JSONB,
@@ -34,8 +34,8 @@ export const contentEntries = pgTable(
       .default(sql`'{}'::jsonb`),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
-    createdBy: uuid("created_by").references(() => users.id),
-    updatedBy: uuid("updated_by").references(() => users.id),
+    createdBy: uuid("created_by").references(() => profiles.id, { onDelete: "set null" }),
+    updatedBy: uuid("updated_by").references(() => profiles.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -58,7 +58,7 @@ export const contentVersions = pgTable("content_versions", {
     .references(() => contentEntries.id, { onDelete: "cascade" }),
   data: jsonb("data").notNull().$type<Record<string, unknown>>(),
   statusAtSave: contentStatusEnum("status_at_save").notNull(),
-  authorId: uuid("author_id").references(() => users.id),
+  authorId: uuid("author_id").references(() => profiles.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
