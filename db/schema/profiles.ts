@@ -15,6 +15,12 @@ import { roleEnum, userStatusEnum } from "./enums";
  * That keeps a single source of truth and makes any future RLS policy a plain
  * `auth.uid() = id`.
  *
+ * RLS is ENABLED on this table (migration 0001) with no policies. The app
+ * reaches it only through Drizzle as the owning `postgres` role, which bypasses
+ * RLS; anon/authenticated (PostgREST, public key) are denied. Do NOT add a
+ * permissive policy here without deliberately intending to expose the table
+ * over the public REST API — that is exactly the hole 0001 closed.
+ *
  * `role` and `status` are read on every guarded request rather than carried in
  * the JWT. Supabase cannot revoke a live access token, so a JWT-borne role or
  * status would stay stale for up to a full token lifetime after an admin
