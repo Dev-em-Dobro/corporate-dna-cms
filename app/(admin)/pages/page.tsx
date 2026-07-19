@@ -13,23 +13,22 @@ const LABELS: Record<string, string> = {
 export default function PagesList() {
   return (
     <div>
-      <h1 className="mb-1 text-2xl font-bold text-[var(--color-ink)]">Pages</h1>
-      <p className="mb-5 text-sm text-[var(--color-muted)]">
+      <h1 className="mb-1 text-2xl font-bold text-ink">Pages</h1>
+      <p className="mb-5 text-sm text-muted">
         Singleton pages — one entry each.
       </p>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+      <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
         {Object.keys(SINGLETON_PAGES).map((key) => (
-          <Link
-            key={key}
-            href={`/pages/${key}`}
-            className="rounded-lg border border-[var(--color-line)] p-4 hover:border-[var(--color-brand)]"
-          >
-            <p className="font-medium text-[var(--color-ink)]">
-              {LABELS[key] ?? key}
-            </p>
-          </Link>
+          <li key={key}>
+            <Link
+              href={`/pages/${key}`}
+              className="flex min-h-16 items-center rounded-lg border border-line-strong p-4 transition-colors duration-150 hover:border-brand-dark hover:bg-paper"
+            >
+              <span className="font-medium text-ink">{LABELS[key] ?? key}</span>
+            </Link>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

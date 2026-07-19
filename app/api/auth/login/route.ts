@@ -42,8 +42,15 @@ export async function POST(req: NextRequest) {
       return jsonError(401, "Invalid credentials");
     }
 
+    // Local-development escape hatch: never honoured in a production build, so
+    // this cannot weaken a deployed CMS even if the env var leaks into it.
+    const mfaBypass =
+      process.env.NODE_ENV !== "production" &&
+      process.env.CMS_DISABLE_MFA === "true";
+
     // Admins (and any MFA-enabled user) MUST pass a second factor (FR-015).
-    const mfaRequired = user.role === "admin" || user.mfaEnabled;
+    const mfaRequired =
+      !mfaBypass && (user.role === "admin" || user.mfaEnabled);
     if (mfaRequired) {
       if (!user.totpSecret) {
         return jsonError(403, "MFA is required but not enrolled for this account");
@@ -57,7 +64,11 @@ export async function POST(req: NextRequest) {
       .update(users)
       .set({ lastLoginAt: new Date() })
       .where(eq(users.id, user.id));
-    await writeAudit({ actorId: user.id, action: "auth.login" });
+    await writeAudit({
+      actorId: user.id,
+      action: "auth.login",
+      ...(mfaBypass ? { metadata: { mfaBypass: true } } : {}),
+    });
     return jsonOk({ ok: true });
   } catch (e) {
     return handleError(e);

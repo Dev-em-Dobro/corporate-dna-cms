@@ -30,29 +30,27 @@ export default async function Dashboard() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-[var(--color-ink)]">Dashboard</h1>
-      <p className="mt-1 text-sm text-[var(--color-muted)]">
+      <h1 className="text-2xl font-bold text-ink">Dashboard</h1>
+      <p className="mt-1 text-sm text-muted">
         Content overview. Everything here is editable without a developer.
       </p>
-      <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3">
+      <ul className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3">
         {stats.map(({ def, total, published }) => (
-          <Link
-            key={def.type}
-            href={def.segment ? `/${def.segment}` : "/pages"}
-            className="rounded-lg border border-[var(--color-line)] p-4 hover:border-[var(--color-brand)]"
-          >
-            <p className="text-sm font-semibold text-[var(--color-ink)]">
-              {def.label}
-            </p>
-            <p className="mt-2 text-2xl font-bold text-[var(--color-ink)]">
-              {total}
-            </p>
-            <p className="text-xs text-[var(--color-muted)]">
-              {published} published
-            </p>
-          </Link>
+          <li key={def.type}>
+            <Link
+              href={def.segment ? `/${def.segment}` : "/pages"}
+              className="flex h-full flex-col rounded-lg border border-line-strong p-4 transition-colors duration-150 hover:border-brand-dark hover:bg-paper"
+            >
+              <p className="text-sm font-semibold text-ink">{def.label}</p>
+              <p className="mt-2 text-2xl font-bold text-ink">{total}</p>
+              <p className="text-xs text-muted">
+                {published} published
+                <span className="sr-only"> of {total} total</span>
+              </p>
+            </Link>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

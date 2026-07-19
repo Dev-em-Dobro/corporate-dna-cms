@@ -2,12 +2,29 @@
 
 @theme {
   --font-sans: var(--font-poppins), system-ui, sans-serif;
-  --color-brand: #d84339;
-  --color-brand-dark: #b5342b;
-  --color-ink: #373234;
+
+  /* Surfaces — brand red is a FILL colour only. At 4.39:1 on white it fails
+     WCAG AA for text, so never use --color-brand for foreground copy. */
+  --color-brand: #d84339; /* fills/accents only — 4.39:1, fails AA for text */
+  --color-brand-dark: #b5342b; /* 6.02:1 on white — safe for text and buttons */
+  --color-brand-darker: #94291f; /* hover/active for brand-dark surfaces */
+
+  --color-ink: #373234; /* 12.59:1 — primary text */
+  --color-muted: #6b6b6b; /* 5.33:1 on white, 4.80:1 on paper */
   --color-paper: #f3f3f3;
-  --color-line: #ece9e6;
-  --color-muted: #6b6b6b;
+  --color-line: #ece9e6; /* decorative border only — not a text colour */
+  --color-line-strong: #d6d1cc; /* 3:1+ for input borders (WCAG 1.4.11) */
+
+  /* Semantic status */
+  --color-danger: #b5342b;
+  --color-danger-surface: #fdf1f0;
+  --color-success: #1f6f43;
+  --color-success-surface: #eef7f1;
+  --color-draft: #6b6b6b;
+  --color-draft-surface: #f0f0f0;
+
+  /* Spacing scale — dashboard density */
+  --spacing-gutter: 1.5rem;
 }
 
 html {
@@ -15,6 +32,31 @@ html {
 }
 
 body {
-  color: #3b3b3b;
+  color: var(--color-ink);
   background: #fff;
+}
+
+/* Consistent, visible focus ring on every interactive element.
+   Uses :focus-visible so mouse users don't see rings on click.
+   Longhands, not the `outline` shorthand: a var() inside the shorthand fails
+   substitution here and silently falls back to currentColor. */
+:focus-visible {
+  outline-width: 2px;
+  outline-style: solid;
+  outline-color: var(--color-brand-dark);
+  outline-offset: 2px;
+}
+
+/* Respect users who ask for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

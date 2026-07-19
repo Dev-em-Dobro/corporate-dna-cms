@@ -26,14 +26,12 @@ export default async function PreviewPage({
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-12">
-      <div className="mb-4 rounded bg-[var(--color-paper)] px-3 py-1 text-xs uppercase tracking-widest text-[var(--color-muted)]">
+      <p className="mb-4 inline-block rounded bg-paper px-3 py-1 text-xs uppercase tracking-widest text-muted">
         Preview · {entry.status}
-      </div>
-      <h1 className="text-3xl font-bold text-[var(--color-ink)]">{item.title}</h1>
-      {item.summary && (
-        <p className="mt-2 text-[var(--color-muted)]">{item.summary}</p>
-      )}
-      <pre className="mt-6 overflow-auto rounded-lg border border-[var(--color-line)] bg-[var(--color-paper)] p-4 text-xs">
+      </p>
+      <h1 className="text-3xl font-bold text-ink">{item.title}</h1>
+      {item.summary && <p className="mt-2 text-muted">{item.summary}</p>}
+      <pre className="mt-6 overflow-x-auto rounded-lg border border-line-strong bg-paper p-4 text-xs">
         {JSON.stringify(entry.data, null, 2)}
       </pre>
     </main>

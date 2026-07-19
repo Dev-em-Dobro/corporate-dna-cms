@@ -7,35 +7,22 @@
  *
  * Prints the otpauth:// URI + secret to add to an authenticator app.
  */
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-
-// Minimal .env.local loader (this standalone script isn't run by Next).
+// Load .env.local before anything else (this standalone script isn't run by
+// Next). Static imports are hoisted, so ../db must be imported dynamically
+// inside main() — otherwise it initialises before DATABASE_URL is set.
 try {
-  const raw = readFileSync(resolve(process.cwd(), ".env.local"), "utf8");
-  for (const line of raw.split("\n")) {
-    const m = line.match(/^\s*([\w.-]+)\s*=\s*(.*)\s*$/);
-    if (m && !process.env[m[1]]) {
-      let v = m[2].trim();
-      if (
-        (v.startsWith('"') && v.endsWith('"')) ||
-        (v.startsWith("'") && v.endsWith("'"))
-      )
-        v = v.slice(1, -1);
-      process.env[m[1]] = v;
-    }
-  }
+  process.loadEnvFile(".env.local");
 } catch {
   // no .env.local — rely on the shell environment
 }
 
-import { eq } from "drizzle-orm";
-import { db } from "../db";
-import { users } from "../db/schema";
-import { hashPassword } from "../lib/auth/password";
-import { generateTotpSecret, totpKeyUri } from "../lib/auth/totp";
-
 async function main() {
+  const { eq } = await import("drizzle-orm");
+  const { db } = await import("../db");
+  const { users } = await import("../db/schema");
+  const { hashPassword } = await import("../lib/auth/password");
+  const { generateTotpSecret, totpKeyUri } = await import("../lib/auth/totp");
+
   const email = (process.env.ADMIN_EMAIL ?? process.argv[2] ?? "")
     .trim()
     .toLowerCase();

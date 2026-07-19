@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import Modal from "./ui/Modal";
+import { Skeleton, StatusMessage } from "./ui/Feedback";
+import { buttonPrimary, buttonQuiet, buttonSecondary } from "./ui/styles";
 
 interface MediaItem {
   id: string;
@@ -12,119 +15,198 @@ interface MediaItem {
 export default function MediaPicker({
   value,
   onChange,
+  labelledBy,
+  describedBy,
 }: {
   value?: string;
   onChange: (id: string | undefined) => void;
+  labelledBy?: string;
+  describedBy?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<MediaItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (!open) return;
+  const load = useCallback(() => {
+    setLoading(true);
+    setError("");
     fetch("/api/media")
       .then((r) => r.json())
       .then((b) => setItems(b.items ?? []))
-      .catch(() => setItems([]));
-  }, [open]);
+      .catch(() => setError("Could not load the media library."))
+      .finally(() => {
+        setLoading(false);
+        setLoaded(true);
+      });
+  }, []);
+
+  // Load when the dialog opens, and once up-front if a value needs resolving
+  // into a thumbnail (there is no GET /api/media/:id endpoint).
+  useEffect(() => {
+    if ((open || value) && !loaded && !loading) load();
+  }, [open, value, loaded, loading, load]);
 
   async function upload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setBusy(true);
-    const form = new FormData();
-    form.append("file", file);
-    const res = await fetch("/api/media", { method: "POST", body: form });
-    setBusy(false);
-    if (res.ok) {
-      const asset = await res.json();
+    setError("");
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/media", { method: "POST", body: form });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(body.fields?.file ?? body.error ?? "Upload failed.");
+        return;
+      }
       setItems((prev) => [
-        { id: asset.id, deliveryUrl: asset.deliveryUrl, filename: file.name, mimeType: asset.mimeType },
+        {
+          id: body.id,
+          deliveryUrl: body.deliveryUrl,
+          filename: file.name,
+          mimeType: body.mimeType,
+        },
         ...prev,
       ]);
-      onChange(asset.id);
+      onChange(body.id);
       setOpen(false);
+    } catch {
+      setError("Upload failed — could not reach the server.");
+    } finally {
+      setBusy(false);
+      e.target.value = ""; // allow re-selecting the same file after an error
     }
   }
 
+  const selected = items.find((m) => m.id === value);
+
   return (
     <div>
-      <div className="flex items-center gap-2">
+      <div
+        role="group"
+        aria-labelledby={labelledBy}
+        aria-describedby={describedBy}
+        className="flex flex-wrap items-center gap-3"
+      >
         {value ? (
-          <code className="rounded bg-[var(--color-paper)] px-2 py-1 text-xs">
-            {value}
-          </code>
+          <span className="flex items-center gap-2 rounded border border-line-strong p-1 pr-3">
+            {selected?.mimeType.startsWith("image/") ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={selected.deliveryUrl}
+                alt=""
+                width={40}
+                height={40}
+                loading="lazy"
+                className="h-10 w-10 rounded object-cover"
+              />
+            ) : (
+              <span className="grid h-10 w-10 place-items-center rounded bg-paper text-xs text-muted">
+                file
+              </span>
+            )}
+            <span className="max-w-48 truncate text-sm text-ink">
+              {selected?.filename ?? "Selected media"}
+            </span>
+          </span>
         ) : (
-          <span className="text-xs text-[var(--color-muted)]">No media</span>
+          <span className="text-sm text-muted">No media selected</span>
         )}
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="rounded border border-[var(--color-line)] px-2 py-1 text-xs"
-        >
-          Choose
+        <button type="button" onClick={() => setOpen(true)} className={buttonSecondary}>
+          {value ? "Change" : "Choose media"}
         </button>
         {value && (
           <button
             type="button"
             onClick={() => onChange(undefined)}
-            className="text-xs text-[var(--color-muted)] underline"
+            className={buttonQuiet}
           >
             Clear
           </button>
         )}
       </div>
 
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6"
-          onClick={() => setOpen(false)}
-        >
-          <div
-            className="max-h-[80vh] w-full max-w-3xl overflow-auto rounded-lg bg-white p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-semibold">Media library</h3>
-              <label className="cursor-pointer rounded bg-[var(--color-brand)] px-3 py-1.5 text-xs font-semibold text-white">
-                {busy ? "Uploading..." : "Upload"}
-                <input type="file" className="hidden" onChange={upload} />
-              </label>
-            </div>
-            <div className="grid grid-cols-3 gap-3 md:grid-cols-4">
-              {items.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => {
-                    onChange(m.id);
-                    setOpen(false);
-                  }}
-                  className="overflow-hidden rounded border border-[var(--color-line)] hover:border-[var(--color-brand)]"
-                >
-                  {m.mimeType.startsWith("image/") ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={m.deliveryUrl}
-                      alt={m.filename}
-                      className="h-24 w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-24 items-center justify-center text-xs">
-                      {m.filename}
-                    </div>
-                  )}
-                </button>
-              ))}
-              {items.length === 0 && (
-                <p className="col-span-full text-sm text-[var(--color-muted)]">
-                  No media yet — upload one.
-                </p>
-              )}
-            </div>
-          </div>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Media library"
+        description="Pick an existing asset or upload a new one."
+      >
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <label className={`${buttonPrimary} cursor-pointer`}>
+            {busy ? "Uploading…" : "Upload"}
+            <input
+              type="file"
+              className="sr-only"
+              onChange={upload}
+              disabled={busy}
+            />
+          </label>
+          {busy && (
+            <span role="status" aria-live="polite" className="text-sm text-muted">
+              Uploading…
+            </span>
+          )}
         </div>
-      )}
+
+        {error && (
+          <StatusMessage tone="error" className="mb-3">
+            {error}
+          </StatusMessage>
+        )}
+
+        {loading ? (
+          <Skeleton rows={4} />
+        ) : items.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted">
+            No media yet — upload your first asset.
+          </p>
+        ) : (
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            {items.map((m) => {
+              const isSelected = m.id === value;
+              return (
+                <li key={m.id}>
+                  <button
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => {
+                      onChange(m.id);
+                      setOpen(false);
+                    }}
+                    className={`w-full overflow-hidden rounded border transition-colors duration-150 ${
+                      isSelected
+                        ? "border-brand-dark ring-2 ring-brand-dark"
+                        : "border-line-strong hover:border-brand-dark"
+                    }`}
+                  >
+                    {m.mimeType.startsWith("image/") ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={m.deliveryUrl}
+                        alt=""
+                        loading="lazy"
+                        className="h-24 w-full object-cover"
+                      />
+                    ) : (
+                      <span className="grid h-24 w-full place-items-center bg-paper text-xs text-muted">
+                        file
+                      </span>
+                    )}
+                    <span className="block truncate px-2 py-1.5 text-left text-xs text-ink">
+                      {m.filename}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Modal>
     </div>
   );
 }

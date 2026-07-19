@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { readSession } from "@/lib/auth/session";
+import AdminNav, { type NavItem } from "@/components/AdminNav";
 
-const NAV: { href: string; label: string; adminOnly?: boolean }[] = [
+const NAV: (NavItem & { adminOnly?: boolean })[] = [
   { href: "/", label: "Dashboard" },
   { href: "/cases", label: "Case studies" },
   { href: "/solutions", label: "Solutions" },
@@ -25,30 +25,17 @@ export default async function AdminLayout({
   const items = NAV.filter((n) => !n.adminOnly || session.role === "admin");
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="w-60 shrink-0 border-r border-[var(--color-line)] bg-[var(--color-paper)] p-5">
-        <p className="text-xs font-semibold uppercase tracking-widest text-[var(--color-brand)]">
-          Corporate DNA
-        </p>
-        <p className="mb-6 text-sm font-semibold text-[var(--color-ink)]">CMS</p>
-        <nav className="flex flex-col gap-1">
-          {items.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className="rounded px-3 py-2 text-sm text-[var(--color-ink)] hover:bg-white"
-            >
-              {n.label}
-            </Link>
-          ))}
-        </nav>
-        <form action="/api/auth/logout" method="post" className="mt-8">
-          <button className="text-xs text-[var(--color-muted)] underline">
-            Sign out ({session.email})
-          </button>
-        </form>
-      </aside>
-      <main className="flex-1 p-8">{children}</main>
+    <div className="min-h-screen md:flex">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-ink focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+      >
+        Skip to main content
+      </a>
+      <AdminNav items={items} email={session.email} />
+      <main id="main" className="min-w-0 flex-1 p-4 sm:p-6 md:p-8">
+        {children}
+      </main>
     </div>
   );
 }
