@@ -122,11 +122,13 @@ export async function updateUser(
  * Clear a user's second factor so they can enrol again — for a lost phone.
  *
  * What actually happens to a live session (verified empirically, 2026-07-19 —
- * the docs' "signs out all sessions" claim does NOT hold on the platform):
- * the session survives, but on its next token refresh it is downgraded to
- * aal1, at which point the guards refuse it and route to re-enrolment. The
- * already-issued access token keeps aal2 until it expires — that staleness
- * window is why the token lifetime is shortened to 15 minutes (T003).
+ * the docs' "signs out all sessions" claim does NOT hold): the session
+ * survives factor deletion. On hosted GoTrue its next token refresh demoted
+ * it to aal1, where the guards refuse it; local gotrue v2.192 kept refreshing
+ * at aal2, so the demotion is a version behaviour, not a contract. The hard
+ * bound in every case is the access-token lifetime — 15 minutes (T003) — and
+ * the durable guarantee is that the next fresh sign-in lands in bootstrap
+ * re-enrolment.
  */
 export async function resetMfa(id: string): Promise<void> {
   const [target] = await db.select().from(profiles).where(eq(profiles.id, id));

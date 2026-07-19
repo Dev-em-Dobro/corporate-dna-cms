@@ -42,3 +42,7 @@ next-env.d.ts
 
 # local agent settings (may contain tokens/credentials)
 .claude/settings.local.json
+
+# supabase local stack runtime files
+supabase/.temp/
+supabase/.branches/

@@ -74,9 +74,17 @@ own TOTP factor (there is no API to enrol one on their behalf).
 real emails (built-in SMTP: 2/hour project-wide) and consume MFA verifications (15/hour per IP,
 shared by the whole office) — against the real project a test run can lock actual editors out.
 The suites therefore only run when `.env.test.local` (copy `.env.test.example`) points at a
-dedicated, disposable Supabase project and declares `SUPABASE_TEST_PROJECT="true"`; without it,
-`npm test` runs unit tests and skips every integration suite. vitest reads `.env.test*` only —
-never `.env.local` — so the dev project cannot be hit by accident.
+dedicated, disposable target and declares `SUPABASE_TEST_PROJECT="true"`; without it, `npm test`
+runs unit tests and skips every integration suite. vitest reads `.env.test*` only — never
+`.env.local` — so the dev project cannot be hit by accident.
+
+The standard target is the **local Supabase stack** (`npx supabase start`, Docker required; config
+in `supabase/config.toml` — only db/auth/api/mailpit run, TOTP enabled, rate limits raised, 15-min
+tokens for production parity). Emails land in Mailpit at `http://127.0.0.1:54324` instead of being
+sent, and `npx supabase db reset` wipes the slate. Apply the schema once with
+`$env:DIRECT_URL='postgresql://postgres:postgres@127.0.0.1:54322/postgres'; npm run db:migrate`.
+One caveat discovered this way: hosted and local GoTrue differ on whether an MFA-reset session is
+demoted to aal1 on refresh — the suites assert only the version-independent invariants.
 
 ## Deploy
 
