@@ -19,4 +19,16 @@ test.describe(RUN ? "smoke" : "smoke (skipped — set E2E_BASE_URL)", () => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/login/);
   });
+
+  test("login offers self-service recovery", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByText("Forgot your password?").click();
+    await expect(page).toHaveURL(/\/auth\/recover/);
+    await expect(page.getByText("Reset your password")).toBeVisible();
+  });
+
+  test("unauthenticated enrolment redirects to login", async ({ page }) => {
+    await page.goto("/auth/enrol");
+    await expect(page).toHaveURL(/\/login/);
+  });
 });
