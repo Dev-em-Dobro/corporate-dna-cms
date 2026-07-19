@@ -36,6 +36,7 @@ export interface AuditQuery {
   action?: string;
   targetType?: string;
   limit?: number;
+  offset?: number;
 }
 
 export async function listAudit(q: AuditQuery = {}) {
@@ -48,5 +49,6 @@ export async function listAudit(q: AuditQuery = {}) {
     .from(auditLog)
     .where(conds.length ? and(...conds) : undefined)
     .orderBy(desc(auditLog.createdAt))
-    .limit(Math.min(q.limit ?? 100, 500));
+    .limit(Math.min(q.limit ?? 100, 500))
+    .offset(Math.max(0, q.offset ?? 0));
 }

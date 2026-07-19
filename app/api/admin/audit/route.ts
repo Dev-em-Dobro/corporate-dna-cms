@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
       targetType: sp.get("targetType") ?? undefined,
       actorId: sp.get("actorId") ?? undefined,
       limit: Number(sp.get("limit") ?? 100),
+      offset: Number(sp.get("offset") ?? 0),
     });
     return jsonOk({ items });
   } catch (e) {

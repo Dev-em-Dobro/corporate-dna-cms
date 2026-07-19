@@ -3,7 +3,16 @@
 import { useEffect, useState } from "react";
 import { StatusMessage, Skeleton } from "./ui/Feedback";
 import { useConfirm } from "./ui/useConfirm";
-import { buttonPrimary, buttonDanger, input, select } from "./ui/styles";
+import {
+  buttonPrimary,
+  buttonSecondary,
+  buttonDanger,
+  input,
+  select,
+} from "./ui/styles";
+
+/** Audit entries shown per page. */
+const AUDIT_PAGE_SIZE = 20;
 
 interface UserRow {
   id: string;
@@ -24,6 +33,9 @@ interface AuditRow {
 export default function UsersManager() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [audit, setAudit] = useState<AuditRow[]>([]);
+  const [auditPage, setAuditPage] = useState(0);
+  const [auditHasMore, setAuditHasMore] = useState(false);
+  const [auditLoading, setAuditLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"admin" | "editor">("editor");
@@ -32,6 +44,27 @@ export default function UsersManager() {
   const [busy, setBusy] = useState(false);
   const [confirm, confirmDialog] = useConfirm();
 
+  /**
+   * One page of audit. Asks for one row beyond the page: its presence is what
+   * proves a next page exists, without a count query over an append-only log
+   * that only grows.
+   */
+  function loadAudit(page: number) {
+    setAuditLoading(true);
+    setAuditPage(page);
+    return fetch(
+      `/api/admin/audit?limit=${AUDIT_PAGE_SIZE + 1}&offset=${page * AUDIT_PAGE_SIZE}`,
+    )
+      .then((r) => r.json())
+      .then((b) => {
+        const items: AuditRow[] = b.items ?? [];
+        setAuditHasMore(items.length > AUDIT_PAGE_SIZE);
+        setAudit(items.slice(0, AUDIT_PAGE_SIZE));
+      })
+      .catch(() => {})
+      .finally(() => setAuditLoading(false));
+  }
+
   function load() {
     setLoading(true);
     Promise.all([
@@ -39,10 +72,7 @@ export default function UsersManager() {
         .then((r) => r.json())
         .then((b) => setUsers(b.items ?? []))
         .catch(() => setError("Could not load users.")),
-      fetch("/api/admin/audit?limit=50")
-        .then((r) => r.json())
-        .then((b) => setAudit(b.items ?? []))
-        .catch(() => {}),
+      loadAudit(0),
     ]).finally(() => setLoading(false));
   }
   useEffect(load, []);
@@ -282,12 +312,14 @@ export default function UsersManager() {
       )}
 
       <h2 className="mb-2 text-sm font-semibold text-ink">Recent audit</h2>
-      {loading ? (
+      {loading || auditLoading ? (
         <Skeleton rows={3} />
       ) : audit.length === 0 ? (
-        <p className="text-sm text-muted">No audit entries yet.</p>
+        <p className="text-sm text-muted">
+          {auditPage === 0 ? "No audit entries yet." : "No entries on this page."}
+        </p>
       ) : (
-        <ul className="flex flex-col divide-y divide-line text-sm">
+        <ul className="flex flex-col divide-y divide-line text-sm" aria-live="polite">
           {audit.map((a) => (
             <li key={a.id} className="flex flex-wrap gap-x-3 gap-y-0.5 py-2">
               <time
@@ -303,6 +335,35 @@ export default function UsersManager() {
             </li>
           ))}
         </ul>
+      )}
+
+      {/* Pager renders once anything is beyond page one, and stays visible on
+          later pages so "Previous" is always reachable. */}
+      {!loading && (auditPage > 0 || auditHasMore) && (
+        <nav
+          aria-label="Audit log pages"
+          className="mt-3 flex items-center gap-3 border-t border-line pt-3"
+        >
+          <button
+            type="button"
+            onClick={() => loadAudit(auditPage - 1)}
+            disabled={auditLoading || auditPage === 0}
+            className={buttonSecondary}
+          >
+            Previous
+          </button>
+          <span className="text-sm text-muted" aria-current="page">
+            Page {auditPage + 1}
+          </span>
+          <button
+            type="button"
+            onClick={() => loadAudit(auditPage + 1)}
+            disabled={auditLoading || !auditHasMore}
+            className={buttonSecondary}
+          >
+            Next
+          </button>
+        </nav>
       )}
 
       {confirmDialog}
