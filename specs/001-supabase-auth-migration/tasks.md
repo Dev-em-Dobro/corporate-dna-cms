@@ -96,7 +96,7 @@ that started this whole effort.
 
 > Write these first and confirm they fail before implementing.
 
-- [ ] T026 [P] [US1] Integration test in `tests/integration/auth-enrolment.test.ts`: enrolment returns a QR payload and a manual-entry secret; the secret is not returned again after the factor is verified
+- [x] T026 [P] [US1] Integration test in `tests/integration/auth-enrolment.test.ts`: enrolment returns a QR payload and a manual-entry secret; the secret is not returned again after the factor is verified
 - [ ] T027 [P] [US1] Integration test in `tests/integration/auth-enrolment-abandon.test.ts`: beginning enrolment five times without confirming leaves **exactly one** unverified factor, not five. Guards against the undocumented unverified-factor lifecycle and the 10-factor cap (research D9/R5)
 - [ ] T028 [P] [US1] Integration test in `tests/integration/auth-bootstrap.test.ts`: an account with no factor reaches enrolment and **every** admin route returns 403 from that state (SC-002a)
 
@@ -105,12 +105,12 @@ that started this whole effort.
 - [x] T029 [US1] Add `requireEnrolmentBootstrap()` to `lib/auth/guards.ts`: succeeds only for an authenticated session with **no verified factor**, fails once one exists. Keep it a separate named export rather than a branch inside `requireSession` — this is the one place a password-only session is allowed through, and it should be greppable and individually testable
 - [x] T030 [US1] Implement `POST /api/auth/mfa/enrol` in `app/api/auth/mfa/enrol/route.ts`: guard with `requireEnrolmentBootstrap`, call `listFactors()` and `unenroll()` any pre-existing **unverified** factor, then `mfa.enroll({ factorType: 'totp' })`. Return `qrCodeSvg`, `secret`, `uri`, `factorId`. The unenroll step is what makes T027 pass
 - [x] T031 [US1] Implement `POST /api/auth/mfa/enrol/confirm` in `app/api/auth/mfa/enrol/confirm/route.ts` calling `mfa.challengeAndVerify`. On success the session becomes `aal2` and Supabase signs out all other sessions — expected, not a bug
-- [ ] T032 [US1] Create the enrolment screen at `app/auth/enrol/page.tsx`: render `qrCodeSvg` as a data URL in an `<img>`, show the secret as manual-entry fallback (FR-003), and accept the confirmation code
-- [ ] T033 [US1] Route the bootstrap state from `app/(admin)/layout.tsx` to `/auth/enrol`, and refuse every other admin surface from that state
+- [x] T032 [US1] Create the enrolment screen at `app/auth/enrol/page.tsx`: render `qrCodeSvg` as a data URL in an `<img>`, show the secret as manual-entry fallback (FR-003), and accept the confirmation code
+- [x] T033 [US1] Route the bootstrap state from `app/(admin)/layout.tsx` to `/auth/enrol`, and refuse every other admin surface from that state
 - [x] T034 [US1] Add `auth.mfa_enrolled`, `auth.bootstrap_enter` and `auth.bootstrap_exit` audit actions through `lib/audit/log.ts` (FR-031)
 - [x] T035 [US1] Add `actorEmail` capture to `writeAudit()` in `lib/audit/log.ts` so audit rows stay human-readable after the referenced profile is deleted
 - [x] T036 [US1] Rewrite `scripts/seed-admin.ts` over `auth.admin.createUser()`. It can no longer generate a TOTP secret — Supabase has no API to enrol a factor on another user's behalf. The seeded admin lands in the bootstrap state and enrols on first sign-in (FR-022)
-- [ ] T037 [US1] Surface the platform rate limit in the enrolment UI: MFA challenge/verify is capped at **15/hour per IP address**, shared by everyone behind the same egress IP and not configurable. A generic "try again later" is actively misleading here
+- [x] T037 [US1] Surface the platform rate limit in the enrolment UI: MFA challenge/verify is capped at **15/hour per IP address**, shared by everyone behind the same egress IP and not configurable. A generic "try again later" is actively misleading here
 
 **Checkpoint**: a user can enrol a factor by scanning. US1 is independently demonstrable.
 
@@ -136,7 +136,7 @@ route with only the password step satisfied and confirm refusal.
 - [x] T042 [US2] Rewrite `app/api/auth/login/route.ts`: sign in with password, then return `next: 'mfa' | 'enrol' | 'done'` derived from the `currentLevel`/`nextLevel` pair. **Remove `challengeId`** — the custom 5-minute challenge JWT is retired. Refuse disabled accounts indistinguishably from bad credentials (FR-006)
 - [x] T043 [US2] Rewrite `app/api/auth/mfa/route.ts` to accept `{ code }` only, resolving the pending challenge from the `aal1` session. Map Supabase's 429 to a message that names the per-IP limit rather than a generic retry hint
 - [x] T044 [US2] Rewrite `app/api/auth/logout/route.ts` to call `signOut({ scope: 'local' })` **explicitly**. Supabase defaults to `global`, which would sign the user out of every device — a silent regression
-- [ ] T045 [US2] Update `app/login/page.tsx` to branch on `next` instead of on the presence of a `challengeId`, routing to the challenge or to enrolment
+- [x] T045 [US2] Update `app/login/page.tsx` to branch on `next` instead of on the presence of a `challengeId`, routing to the challenge or to enrolment
 - [x] T046 [US2] Enforce the assurance level in `requireSession` / `requireAdmin` in `lib/auth/guards.ts`, throwing `AuthError(403)` carrying `next` so callers can redirect to challenge or enrolment rather than dead-ending. Supabase's guidance is to redirect to re-authentication, not to reject outright
 - [x] T047 [US2] Update `app/(admin)/layout.tsx` from `readSession` to the guard DAL
 - [x] T048 [US2] Audit `auth.login`, `auth.mfa_fail` and `auth.logout` through `lib/audit/log.ts`, and write `lastLoginAt` on full-assurance sign-in
@@ -168,7 +168,7 @@ user's access changes on their next request.
 - [x] T057 [US4] Update `updateUser` in `lib/users/service.ts` to drop the auto-TOTP-enrolment-on-promotion branch. Promoting someone to administrator now leaves them in the bootstrap state to enrol for themselves — there is no API to enrol a factor on another user's behalf
 - [x] T058 [US4] Extend the last-admin safeguard in `lib/users/service.ts` to cover deletion and Supabase-side bans, not only role and status changes (FR-012)
 - [x] T059 [US4] Update `app/api/admin/users/route.ts` and `app/api/admin/users/[id]/route.ts` for the new service surface: no `password` in, no `totpUri`/`totpSecret` out
-- [ ] T060 [US4] Rewrite the enrolment panel in `components/UsersManager.tsx`. The "share this securely" `otpauth://` block is removed entirely — administrators no longer receive a secret to hand over. Replace with invitation status and an MFA-reset action
+- [x] T060 [US4] Rewrite the enrolment panel in `components/UsersManager.tsx`. The "share this securely" `otpauth://` block is removed entirely — administrators no longer receive a secret to hand over. Replace with invitation status and an MFA-reset action
 - [x] T061 [US4] Audit `user.invited`, `user.mfa_reset`, `user.disabled` and `user.role_changed` through `lib/audit/log.ts`
 - [ ] T062 [US4] Implement `GET /api/auth/confirm` in `app/auth/confirm/route.ts` using `verifyOtp({ type, token_hash })` — the `token_hash` flow, not `exchangeCodeForSession` — so invitation links resolve
 

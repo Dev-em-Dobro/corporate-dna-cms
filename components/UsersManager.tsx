@@ -3,14 +3,13 @@
 import { useEffect, useState } from "react";
 import { StatusMessage, Skeleton } from "./ui/Feedback";
 import { useConfirm } from "./ui/useConfirm";
-import { buttonPrimary, input, select } from "./ui/styles";
+import { buttonPrimary, buttonDanger, input, select } from "./ui/styles";
 
 interface UserRow {
   id: string;
   email: string;
   role: "admin" | "editor";
   status: "active" | "invited" | "disabled";
-  mfaEnabled: boolean;
   lastLoginAt: string | null;
 }
 interface AuditRow {
@@ -27,9 +26,7 @@ export default function UsersManager() {
   const [audit, setAudit] = useState<AuditRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [role, setRole] = useState<"admin" | "editor">("editor");
-  const [totpUri, setTotpUri] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -50,29 +47,52 @@ export default function UsersManager() {
   }
   useEffect(load, []);
 
-  async function create(e: React.FormEvent) {
+  async function invite(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setNotice("");
-    setTotpUri("");
     setBusy(true);
     try {
       const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email, password, role }),
+        body: JSON.stringify({ email, role }),
       });
       const b = await res.json();
-      if (!res.ok) return setError(b.error ?? "Could not create the user.");
-      if (b.totpUri) setTotpUri(b.totpUri);
-      setNotice(`${email} created as ${role}.`);
+      if (!res.ok) return setError(b.error ?? "Could not invite the user.");
+      setNotice(`Invitation sent to ${email} as ${role}.`);
       setEmail("");
-      setPassword("");
       load();
     } catch {
       setError("Could not reach the server.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function resetMfa(user: UserRow) {
+    const ok = await confirm({
+      title: `Reset the second factor for ${user.email}?`,
+      description:
+        "Their current authenticator stops working immediately and they are signed out everywhere. They will set up a new one on their next sign-in.",
+      confirmLabel: "Reset second factor",
+      destructive: true,
+    });
+    if (!ok) return;
+    setError("");
+    setNotice("");
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "reset-mfa" }),
+      });
+      const b = await res.json();
+      if (!res.ok) return setError(b.error ?? "Could not reset the second factor.");
+      setNotice(`${user.email} will set up a new authenticator on next sign-in.`);
+      load();
+    } catch {
+      setError("Could not reach the server.");
     }
   }
 
@@ -87,7 +107,6 @@ export default function UsersManager() {
       });
       const b = await res.json();
       if (!res.ok) return setError(b.error ?? "Update failed.");
-      if (b.totpUri) setTotpUri(b.totpUri);
       load();
     } catch {
       setError("Could not reach the server.");
@@ -133,21 +152,19 @@ export default function UsersManager() {
       <h1 className="mb-5 text-2xl font-bold text-ink">Users &amp; audit</h1>
 
       <form
-        onSubmit={create}
+        onSubmit={invite}
         className="mb-6 max-w-3xl rounded-lg border border-line-strong p-5"
       >
-        <h2 className="text-sm font-semibold text-ink">Create user</h2>
-        {/* There is no self-enrolment flow: the TOTP secret is generated
-            server-side and shown here once. Say so, rather than implying the
-            new user sets up MFA themselves. */}
+        <h2 className="text-sm font-semibold text-ink">Invite user</h2>
+        {/* Enrolment is now self-service, and there is no password field: you
+            never handle someone else's credentials, and there is no secret to
+            pass along out of band. */}
         <p className="mt-1 text-sm text-muted">
-          {role === "admin"
-            ? "Admins always get MFA. The enrolment code appears below once after you create them — send it over a secure channel, they cannot retrieve it themselves."
-            : "Editors sign in with this password alone. No MFA code is issued."}
+          They receive an email invitation, set their own password, and set up
+          their own authenticator app on first sign-in. Nothing here needs to be
+          sent to them separately.
         </p>
 
-        {/* A grid, not a flex row: with `items-end` the password column's helper
-            text dragged its input 22px out of line with every other control. */}
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="new-email" className="text-sm font-medium text-ink">
@@ -179,33 +196,11 @@ export default function UsersManager() {
             </select>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="new-password"
-              className="text-sm font-medium text-ink"
-            >
-              Temporary password
-            </label>
-            <input
-              id="new-password"
-              className={input}
-              type="password"
-              autoComplete="new-password"
-              minLength={8}
-              aria-describedby="new-password-hint"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <span id="new-password-hint" className="text-xs text-muted">
-              At least 8 characters.
-            </span>
-          </div>
         </div>
 
         <div className="mt-5 flex justify-end border-t border-line pt-4">
           <button disabled={busy} aria-busy={busy} className={buttonPrimary}>
-            {busy ? "Creating…" : "Create user"}
+            {busy ? "Sending…" : "Send invitation"}
           </button>
         </div>
       </form>
@@ -220,14 +215,6 @@ export default function UsersManager() {
           {notice}
         </StatusMessage>
       )}
-      {totpUri && (
-        <div className="mb-4 rounded border border-line-strong bg-paper p-3">
-          <p className="text-xs font-semibold text-ink">
-            MFA enrolment — share this securely, it is shown only once
-          </p>
-          <code className="mt-1 block break-all text-xs text-muted">{totpUri}</code>
-        </div>
-      )}
 
       <h2 className="mb-2 text-sm font-semibold text-ink">Users</h2>
       {loading ? (
@@ -236,14 +223,14 @@ export default function UsersManager() {
         <div className="mb-8 overflow-x-auto rounded-lg border border-line-strong">
           <table className="w-full min-w-[36rem] text-sm">
             <caption className="sr-only">
-              CMS users with their role, account status, and MFA state
+              CMS users with their role, account status, and second-factor actions
             </caption>
             <thead className="bg-paper text-left text-xs uppercase tracking-wide text-muted">
               <tr>
                 <th scope="col" className="px-4 py-2 font-semibold">Email</th>
                 <th scope="col" className="px-4 py-2 font-semibold">Role</th>
                 <th scope="col" className="px-4 py-2 font-semibold">Status</th>
-                <th scope="col" className="px-4 py-2 font-semibold">MFA</th>
+                <th scope="col" className="px-4 py-2 font-semibold">Second factor</th>
               </tr>
             </thead>
             <tbody>
@@ -271,19 +258,21 @@ export default function UsersManager() {
                       aria-label={`Status for ${u.email}`}
                     >
                       <option value="active">Active</option>
+                      <option value="invited">Invited</option>
                       <option value="disabled">Disabled</option>
                     </select>
                   </td>
                   <td className="px-4 py-2">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                        u.mfaEnabled
-                          ? "bg-success-surface text-success"
-                          : "bg-draft-surface text-draft"
-                      }`}
+                    {/* Enrolment state is not mirrored locally — it lives in
+                        Supabase, and a cached copy here would silently drift
+                        out of date. What an admin can actually do is reset it. */}
+                    <button
+                      type="button"
+                      onClick={() => resetMfa(u)}
+                      className={buttonDanger}
                     >
-                      {u.mfaEnabled ? "Enabled" : "Not set up"}
-                    </span>
+                      Reset
+                    </button>
                   </td>
                 </tr>
               ))}

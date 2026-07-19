@@ -24,7 +24,27 @@ async function main() {
   const { eq } = await import("drizzle-orm");
   const { db } = await import("../db");
   const { profiles } = await import("../db/schema");
-  const { createAdminClient } = await import("../lib/supabase/admin");
+  const { createClient } = await import("@supabase/supabase-js");
+
+  /**
+   * Builds its own client rather than importing lib/supabase/admin, which is
+   * marked `server-only` — a Next.js construct that does not resolve under
+   * tsx. That marker is worth keeping there: it turns any accidental import of
+   * the service-role key from a client component into a build error. This
+   * script runs outside Next entirely, so it does its own wiring.
+   */
+  const createAdminClient = () => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) {
+      throw new Error(
+        "NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required",
+      );
+    }
+    return createClient(url, key, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+  };
 
   const email = (process.env.ADMIN_EMAIL ?? process.argv[2] ?? "")
     .trim()

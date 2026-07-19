@@ -233,7 +233,26 @@ dedup — and there is a documented cap of 10 factors per user. Abandoned enrolm
 plausibly accumulate toward that cap.
 
 **Mitigation**: call `listFactors()` and `unenroll()` any pre-existing unverified factor before
-enrolling a new one. This must be verified empirically (risk R5).
+enrolling a new one.
+
+**Verified empirically 2026-07-18**: calling the enrolment endpoint twice in a row leaves exactly
+one factor on the account, and a distinct `factorId` each time — confirming both that stale factors
+would otherwise persist and that the unenroll-first mitigation works. Risk R5 closed.
+
+### Two undocumented behaviours, settled by running it
+
+The documentation was wrong or silent on both of these, and both were caught only by exercising the
+real endpoint:
+
+1. **`totp.qr_code` is already a `data:image/svg+xml;utf-8,...` URI**, not raw SVG. The TOTP guide
+   describes it as SVG and shows converting it to a data URL — following that literally
+   double-encodes the value and renders a broken image, which fails silently and only surfaces when
+   a person tries to scan it. Handle both forms.
+2. **The `issuer` parameter on `enroll()` works**, and matters. Without it the issuer is derived
+   from the project's Site URL, so authenticator apps list the account as `localhost:3000` —
+   meaningless to the user and liable to collide across environments. Passing
+   `issuer: "Corporate DNA CMS"` produces
+   `otpauth://totp/Corporate%20DNA%20CMS:user@example.com?...&issuer=Corporate%20DNA%20CMS`.
 
 ---
 
@@ -342,7 +361,7 @@ on its default `drizzle` schema.
 | **R2** | Supabase free tier has no backups and no PITR | DR posture regresses versus Neon | **No longer blocks cutover** (nothing to lose yet). Becomes real the moment content exists — decide before the CMS carries anything anyone would miss: accept scheduled dumps, or budget Pro + PITR |
 | **R3** | Access tokens cannot be revoked before expiry | FR-006/FR-009 unsatisfiable by Supabase alone | Mitigated by D5 (DB status check per request) + shortened token lifetime |
 | ~~**R4**~~ | ~~Signing key mode unknown~~ | — | **CLOSED 2026-07-18 — asymmetric confirmed.** JWKS returns a single `ES256` key (`kty: EC`, P-256). `getClaims()` is network-free; D2 holds as written |
-| **R5** | Unverified-factor lifecycle undocumented; 10-factor cap | Abandoned enrolments may accumulate and eventually block enrolment | Verify empirically; mitigate with `listFactors()` + `unenroll()` before enrol |
+| ~~**R5**~~ | ~~Unverified-factor lifecycle~~ | — | **CLOSED 2026-07-18.** Verified against the live project: enrolling twice leaves exactly one factor. The unenroll-first mitigation works |
 | **R6** | `drizzle-kit pull` bug against the `auth` schema; fix status in 0.45 unknown | Broken introspection | Avoided by design (`schemaFilter: ['public']` + `authUsers`) |
 | **R7** | `attachDatabasePool()` compatibility with `postgres.js` unverified; Vercel and Supabase guidance conflict on global-scope clients | Connection exhaustion under Fluid Compute | Test under load; fall back to `pg` + `node-postgres` if needed |
 | **R8** | ~~Deploy gate~~ | — | **RESOLVED 2026-07-18.** Initially recorded as "current identity does not match" — that was wrong. HEAD and all prior commits were already authored `impulseaisolutions@gmail.com`; the gate was passing. Only the repo's `user.email` config diverged, which would have broken the *next* commit. Repo-local identity now set to match |

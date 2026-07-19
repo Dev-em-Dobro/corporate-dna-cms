@@ -31,6 +31,13 @@ export async function POST() {
     const { data, error } = await supabase.auth.mfa.enroll({
       factorType: "totp",
       friendlyName: `Corporate DNA CMS (${session.email})`,
+      /**
+       * Without this the issuer is derived from the project's Site URL, so the
+       * authenticator app lists the account as "localhost:3000" — meaningless
+       * to the user and liable to collide across environments. The parameter
+       * is undocumented; verified by inspecting the returned otpauth URI.
+       */
+      issuer: "Corporate DNA CMS",
     });
 
     if (error) {
