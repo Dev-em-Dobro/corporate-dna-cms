@@ -38,10 +38,10 @@ way. Do not begin Phase 2 with any of them unresolved.
 - [ ] T004 [P] Record the Supabase plan tier and PITR status in `research.md` risk R2. Does not block cutover with an empty database, but must be a dated decision rather than an omission
 - [x] T005 [P] ~~Resolve the deploy gate~~ **DONE 2026-07-18.** The gate was never failing: HEAD and both prior commits are authored `impulseaisolutions@gmail.com`. What did not match was the repo's `user.email` config (`roberto.rhd@gmail.com`), so the *next* commit would have broken it. Fixed by setting repo-local `user.name`/`user.email` to the Impulse identity, matching existing history
 - [x] T006 ~~Commit or revert the uncommitted working-tree changes~~ **DONE 2026-07-18.** Typecheck passed clean, so the work was checkpointed rather than discarded, in two commits by authorship: `65c4d88` (pre-existing admin UI overhaul + `components/ui` primitives) and `685341f` (Spec Kit tooling + this feature's design record). Working tree is clean
-- [ ] T007 Create the Supabase project (or confirm the existing one) and capture both connection strings: pooled transaction mode on port 6543, and direct on 5432
+- [x] T007 ~~Create the Supabase project and capture both connection strings~~ **DONE 2026-07-18.** Project exists; `DATABASE_URL` on Supavisor transaction mode (6543) and `DIRECT_URL` on 5432 are both set. Note `DIRECT_URL` targets the **pooler in session mode** (`...pooler.supabase.com:5432`), not the true direct host (`db.<ref>.supabase.co:5432`). This is deliberate and probably necessary — the true direct connection is IPv6-only without the paid IPv4 add-on, whereas session mode is IPv4 on all tiers and still supports prepared statements, so drizzle-kit migrations work through it. Revisit only if migrations behave oddly
 - [ ] T008 Install dependencies in `package.json`: add `@supabase/supabase-js`, `@supabase/ssr`, `postgres`
 - [ ] T009 Remove dead and superseded dependencies from `package.json`: `otplib`, `qrcode`, `@types/qrcode`, `@node-rs/argon2`, `@neondatabase/serverless`, and `next-auth` (the last is already dead — declared but imported nowhere)
-- [ ] T010 [P] Update `.env.example`: add `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DIRECT_DATABASE_URL`; remove `AUTH_SECRET` and `CMS_DISABLE_MFA`; keep `PREVIEW_TOKEN_SECRET`. Note in a comment that `AUTH_SECRET` must stay in the deployed environment until the rollback window closes
+- [ ] T010 [P] Update `.env.example`: add `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DIRECT_URL`; remove `AUTH_SECRET` and `CMS_DISABLE_MFA`; keep `PREVIEW_TOKEN_SECRET`. Note in a comment that `AUTH_SECRET` must stay in the deployed environment until the rollback window closes
 
 **Checkpoint**: unknowns resolved, dependencies aligned, clean tree.
 
@@ -65,13 +65,13 @@ user story depends on all of it.
 ### Database
 
 - [ ] T016 Rewrite `db/index.ts` from `drizzle-orm/neon-serverless` to `drizzle-orm/postgres-js`, using `postgres(DATABASE_URL, { prepare: false })`. `prepare: false` is mandatory — Supavisor transaction mode breaks prepared statements
-- [ ] T017 Update `drizzle.config.ts`: set `schemaFilter: ['public']`, `entities: { roles: { provider: 'supabase' } }`, and point `dbCredentials.url` at `DIRECT_DATABASE_URL` (not the pooled 6543 string)
+- [ ] T017 Update `drizzle.config.ts`: set `schemaFilter: ['public']`, `entities: { roles: { provider: 'supabase' } }`, and point `dbCredentials.url` at `DIRECT_URL` (not the pooled 6543 string)
 - [ ] T018 Rename `db/schema/users.ts` to `db/schema/profiles.ts`. Set `id` as `uuid` primary key referencing `authUsers.id` from `drizzle-orm/supabase` with `onDelete: 'cascade'`; drop `passwordHash`, `totpSecret` and `mfaEnabled`; keep `email`, `role`, `status`, `lastLoginAt`, `createdAt`, `updatedAt`. Renaming away from `users` also sidesteps a reported `search_path` collision with `auth.users`
 - [ ] T019 Add `actorEmail` (`text`, nullable) to `db/schema/audit.ts`, and set `actorId` to `onDelete: 'set null'`. **This deliberately diverges from Supabase's documented blanket cascade**, which would erase audit history on user deletion (FR-019)
 - [ ] T020 [P] Set `onDelete: 'set null'` on `createdBy` and `updatedBy` in `db/schema/content.ts` (`contentEntries`) and on `authorId` (`contentVersions`). Content must outlive its author
 - [ ] T021 [P] Set `onDelete: 'set null'` on `uploadedBy` in `db/schema/media.ts`
 - [ ] T022 Update `db/schema/index.ts` exports for the `users` → `profiles` rename
-- [ ] T023 Generate and apply the fresh schema: `npm run db:generate` then `npm run db:migrate` against `DIRECT_DATABASE_URL`. Review the generated SQL and **strip any `CREATE SCHEMA "auth"` statement** — that schema is Supabase-owned and the statement will fail
+- [ ] T023 Generate and apply the fresh schema: `npm run db:generate` then `npm run db:migrate` against `DIRECT_URL`. Review the generated SQL and **strip any `CREATE SCHEMA "auth"` statement** — that schema is Supabase-owned and the statement will fail
 
 ### Guards — the enforcement point
 
@@ -213,7 +213,7 @@ planned. There is no migration script, no write-freeze window and no point of no
 
 - [ ] T071 [US6] Exercise all seven collections end-to-end through the application on the new database — create a case study, edit it to produce a version, publish it, upload a media asset, register a webhook — and confirm every relationship resolves (FR-024, SC-004)
 - [ ] T072 [US6] Verify the FK deletion rules behave as designed: delete a throwaway user via `auth.admin` and confirm `audit_log` rows **survive** with `actorId` nulled and `actorEmail` populated, and that content, versions and media survive their author's deletion. This is the assertion Supabase's documented default would get wrong
-- [ ] T073 [US6] Rehearse rollback on staging: repoint `DATABASE_URL` and `DIRECT_DATABASE_URL` at Neon, redeploy, confirm the previous system returns intact, then repoint forward (SC-008)
+- [ ] T073 [US6] Rehearse rollback on staging: repoint `DATABASE_URL` and `DIRECT_URL` at Neon, redeploy, confirm the previous system returns intact, then repoint forward (SC-008)
 - [ ] T074 [US6] Perform cutover: swap the environment variables and redeploy. Keep `AUTH_SECRET` in the environment until the rollback window closes — rolling back restores the old auth stack, which needs it
 - [ ] T075 [US6] **Do not decommission the Neon project.** Keep it alive and readable for the full rollback window (FR-023). This is the single action that would convert a reversible cutover into an irreversible one
 - [ ] T076 [US6] Rewrite the Backup & recovery section of `docs/handover.md`, replacing the Neon branch-restore procedure with the new one (FR-027). If the project is on the free tier, state plainly that there are no automated backups and document the scheduled-dump procedure that replaces them

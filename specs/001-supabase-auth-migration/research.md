@@ -323,7 +323,7 @@ export default defineConfig({
   dialect: 'postgresql',
   schemaFilter: ['public'],                          // never introspect `auth`
   entities: { roles: { provider: 'supabase' } },     // ignore Supabase's built-in roles
-  dbCredentials: { url: process.env.DIRECT_DATABASE_URL! },  // direct, not 6543
+  dbCredentials: { url: process.env.DIRECT_URL! },  // direct, not 6543
 });
 ```
 

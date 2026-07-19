@@ -29,7 +29,7 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SERVICE_ROLE_KEY=        # server-only, never NEXT_PUBLIC_
 DATABASE_URL=                     # Supavisor transaction mode, port 6543
-DIRECT_DATABASE_URL=              # direct connection, port 5432 — migrations and pg_dump only
+DIRECT_URL=                       # port 5432 — migrations and pg_dump only
 PREVIEW_TOKEN_SECRET=             # retained, out of scope
 ```
 
@@ -181,7 +181,7 @@ author's deletion.
 is no restore step and no point of no return. Still verify it — an untested rollback is not a
 rollback.
 
-1. With the new database live, repoint `DATABASE_URL` (and `DIRECT_DATABASE_URL`) at Neon.
+1. With the new database live, repoint `DATABASE_URL` (and `DIRECT_URL`) at Neon.
 2. Redeploy.
 3. **Expect** the previous system to come back intact, because it was never modified.
 4. Repoint forward again and confirm the new system returns.
