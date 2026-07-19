@@ -1,4 +1,5 @@
-import { describe, it, expect, afterAll } from "vitest";
+import { it, expect, afterAll } from "vitest";
+import { integrationDescribe as d } from "../helpers/test-env";
 import { NextRequest } from "next/server";
 import { POST as logoutRoute } from "@/app/api/auth/logout/route";
 import { resetCookies, useJar } from "../helpers/next-headers-stub";
@@ -9,11 +10,6 @@ import {
   beginEnrol,
   type TestCredentials,
 } from "../helpers/auth";
-
-const d =
-  process.env.DATABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_URL
-    ? describe
-    : describe.skip;
 
 // T041 — signing out ends the CURRENT session and leaves other devices signed
 // in. Supabase's default signOut scope is 'global'; the route must pass

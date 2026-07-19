@@ -5,21 +5,17 @@ import { loadEnvConfig } from "@next/env";
 
 const root = resolve(fileURLToPath(new URL(".", import.meta.url)));
 
-// Load .env.local / .env exactly the way `next dev` does, so integration tests
-// reach the same database and Supabase project as the running app. Suites
-// still guard on `process.env.DATABASE_URL` and skip when it is absent (CI
-// without secrets).
-//
-// NODE_ENV juggling: vitest sets NODE_ENV=test, and in test mode @next/env
-// deliberately ignores `.env.local` (it would only read `.env.test*`). This
-// project keeps its dev secrets in `.env.local`, so load in development mode.
+// Load env in TEST mode: @next/env reads `.env.test.local` / `.env.test`
+// and deliberately ignores `.env.local`. That asymmetry is the safety line —
+// integration tests must never inherit the shared/production Supabase
+// project from dev config, because they consume its quotas (MFA verifies:
+// 15/hour per IP; built-in SMTP: 2 emails/hour project-wide) and create
+// users in it. Point tests at a dedicated project via `.env.test.local`
+// (see `.env.test.example`); without it, integration suites skip.
 {
   const env = process.env as Record<string, string | undefined>;
-  const nodeEnv = env.NODE_ENV;
-  env.NODE_ENV = "development";
+  env.NODE_ENV ??= "test";
   loadEnvConfig(root);
-  if (nodeEnv === undefined) delete env.NODE_ENV;
-  else env.NODE_ENV = nodeEnv;
 }
 
 export default defineConfig({

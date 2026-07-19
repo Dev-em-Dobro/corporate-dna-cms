@@ -1,9 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { it, expect } from "vitest";
+import { integrationDescribe as d } from "../helpers/test-env";
 import { createEntry, publishEntry } from "@/lib/content/entries";
 import { listPublished, getPublished } from "@/lib/content/published";
 import { createTestUser, uniqueTitle } from "../helpers/db";
 
-const d = process.env.DATABASE_URL ? describe : describe.skip;
 
 d("US2 no draft leakage (SC-003 / CG-1)", () => {
   it("keeps drafts out of the published list and detail, then exposes them once published", async () => {

@@ -1,15 +1,11 @@
-import { describe, it, expect, afterAll } from "vitest";
+import { it, expect, afterAll } from "vitest";
+import { integrationDescribe as d } from "../helpers/test-env";
 import { and, eq, ne, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { profiles } from "@/db/schema";
 import { updateUser, deleteUser } from "@/lib/users/service";
 import { ConflictError } from "@/lib/errors";
 import { deleteUsers, createPasswordUser, type TestCredentials } from "../helpers/auth";
-
-const d =
-  process.env.DATABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_URL
-    ? describe
-    : describe.skip;
 
 // T053 — US4: the last active administrator cannot be removed via role
 // change, via disable, OR via deletion. Deletion is a path to this failure

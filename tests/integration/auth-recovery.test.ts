@@ -1,4 +1,5 @@
-import { describe, it, expect, afterAll } from "vitest";
+import { it, expect, afterAll } from "vitest";
+import { integrationDescribe as d } from "../helpers/test-env";
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { POST as recoverRoute } from "@/app/api/auth/recover/route";
@@ -10,11 +11,6 @@ import {
   jsonRequest,
   type TestCredentials,
 } from "../helpers/auth";
-
-const d =
-  process.env.DATABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_URL
-    ? describe
-    : describe.skip;
 
 function confirmRequest(tokenHash: string): NextRequest {
   return new NextRequest(

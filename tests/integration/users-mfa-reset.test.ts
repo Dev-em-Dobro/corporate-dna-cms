@@ -1,4 +1,5 @@
-import { describe, it, expect, afterAll } from "vitest";
+import { it, expect, afterAll } from "vitest";
+import { integrationDescribe as d } from "../helpers/test-env";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resetMfa } from "@/lib/users/service";
 import { createClient } from "@/lib/supabase/server";
@@ -10,11 +11,6 @@ import {
   signIn,
   type TestCredentials,
 } from "../helpers/auth";
-
-const d =
-  process.env.DATABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_URL
-    ? describe
-    : describe.skip;
 
 // T052 — US4: resetting a factor locks the user's live session out and forces
 // re-enrolment.

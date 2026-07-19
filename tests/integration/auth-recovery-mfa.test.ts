@@ -1,4 +1,5 @@
-import { describe, it, expect, afterAll } from "vitest";
+import { it, expect, afterAll } from "vitest";
+import { integrationDescribe as d } from "../helpers/test-env";
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { POST as passwordRoute } from "@/app/api/auth/password/route";
@@ -13,11 +14,6 @@ import {
   readJson,
   type TestCredentials,
 } from "../helpers/auth";
-
-const d =
-  process.env.DATABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_URL
-    ? describe
-    : describe.skip;
 
 // T064 — US5: completing a password reset still requires the second factor.
 // A recovery link grants only an aal1 session; if the password could change

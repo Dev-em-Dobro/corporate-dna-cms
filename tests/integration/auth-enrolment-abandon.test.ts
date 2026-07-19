@@ -1,4 +1,5 @@
-import { describe, it, expect, afterAll } from "vitest";
+import { it, expect, afterAll } from "vitest";
+import { integrationDescribe as d } from "../helpers/test-env";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resetCookies } from "../helpers/next-headers-stub";
 import {
@@ -8,11 +9,6 @@ import {
   beginEnrol,
   type TestCredentials,
 } from "../helpers/auth";
-
-const d =
-  process.env.DATABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_URL
-    ? describe
-    : describe.skip;
 
 // T027 — US1: beginning enrolment five times without confirming leaves exactly
 // ONE unverified factor, not five. Supabase documents no expiry or GC for

@@ -1,9 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { it, expect } from "vitest";
+import { integrationDescribe as d } from "../helpers/test-env";
 import { createEntry, publishEntry } from "@/lib/content/entries";
 import { listPublished } from "@/lib/content/published";
 import { createTestUser, uniqueTitle } from "../helpers/db";
 
-const d = process.env.DATABASE_URL ? describe : describe.skip;
 
 function validCase(title: string) {
   return {

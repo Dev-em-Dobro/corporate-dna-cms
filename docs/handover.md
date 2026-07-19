@@ -68,9 +68,15 @@ npm test                             # unit + (with DATABASE_URL) integration
 ```
 
 The seeded admin lands in the **bootstrap state**: on first sign-in they are routed to enrol their
-own TOTP factor (there is no API to enrol one on their behalf). Integration tests hit the real
-Supabase project; note the platform caps MFA verifications at **15/hour per IP**, so back-to-back
-full runs inside one hour will start returning 429s.
+own TOTP factor (there is no API to enrol one on their behalf).
+
+**Integration tests never run against the shared/production project.** They create users, send
+real emails (built-in SMTP: 2/hour project-wide) and consume MFA verifications (15/hour per IP,
+shared by the whole office) — against the real project a test run can lock actual editors out.
+The suites therefore only run when `.env.test.local` (copy `.env.test.example`) points at a
+dedicated, disposable Supabase project and declares `SUPABASE_TEST_PROJECT="true"`; without it,
+`npm test` runs unit tests and skips every integration suite. vitest reads `.env.test*` only —
+never `.env.local` — so the dev project cannot be hit by accident.
 
 ## Deploy
 

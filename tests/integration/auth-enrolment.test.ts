@@ -1,4 +1,5 @@
-import { describe, it, expect, afterAll } from "vitest";
+import { it, expect, afterAll } from "vitest";
+import { integrationDescribe as d } from "../helpers/test-env";
 import { POST as enrolConfirmRoute } from "@/app/api/auth/mfa/enrol/confirm/route";
 import { resetCookies } from "../helpers/next-headers-stub";
 import { freshTotp } from "../helpers/totp";
@@ -11,11 +12,6 @@ import {
   readJson,
   type TestCredentials,
 } from "../helpers/auth";
-
-const d =
-  process.env.DATABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_URL
-    ? describe
-    : describe.skip;
 
 // T026 — US1: enrolment returns a QR payload and a manual-entry secret; the
 // secret is not returned again after the factor is verified.

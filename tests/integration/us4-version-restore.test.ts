@@ -1,4 +1,5 @@
-import { describe, it, expect } from "vitest";
+import { it, expect } from "vitest";
+import { integrationDescribe as d } from "../helpers/test-env";
 import {
   createEntry,
   updateEntry,
@@ -8,7 +9,6 @@ import {
 } from "@/lib/content/entries";
 import { createTestUser, uniqueTitle } from "../helpers/db";
 
-const d = process.env.DATABASE_URL ? describe : describe.skip;
 
 d("US4 version restore (SC-006)", () => {
   it("restores an earlier version exactly and records the restore as a new version", async () => {

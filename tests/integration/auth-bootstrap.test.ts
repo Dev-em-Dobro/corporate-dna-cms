@@ -1,4 +1,5 @@
-import { describe, it, expect, afterAll } from "vitest";
+import { it, expect, afterAll } from "vitest";
+import { integrationDescribe as d } from "../helpers/test-env";
 import { guardedRoutes } from "../helpers/admin-routes";
 import { resetCookies } from "../helpers/next-headers-stub";
 import {
@@ -8,11 +9,6 @@ import {
   beginEnrol,
   type TestCredentials,
 } from "../helpers/auth";
-
-const d =
-  process.env.DATABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_URL
-    ? describe
-    : describe.skip;
 
 // T028 — SC-002a: an account with no factor reaches enrolment, and EVERY
 // admin route returns 403 from that state. The bootstrap session exists to

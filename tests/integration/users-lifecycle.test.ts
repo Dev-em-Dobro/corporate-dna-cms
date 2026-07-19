@@ -1,4 +1,5 @@
-import { describe, it, expect, afterAll } from "vitest";
+import { it, expect, afterAll } from "vitest";
+import { integrationDescribe as d } from "../helpers/test-env";
 import { inviteUser, updateUser } from "@/lib/users/service";
 import { guardedRoutes } from "../helpers/admin-routes";
 import { resetCookies } from "../helpers/next-headers-stub";
@@ -9,11 +10,6 @@ import {
   signIn,
   type TestCredentials,
 } from "../helpers/auth";
-
-const d =
-  process.env.DATABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_URL
-    ? describe
-    : describe.skip;
 
 // T051 — US4 lifecycle: invite creates an `invited` profile with no password
 // accepted from the administrator; a role change takes effect on the user's

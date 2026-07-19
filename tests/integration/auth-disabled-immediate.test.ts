@@ -1,4 +1,5 @@
-import { describe, it, expect, afterAll } from "vitest";
+import { it, expect, afterAll } from "vitest";
+import { integrationDescribe as d } from "../helpers/test-env";
 import { updateUser } from "@/lib/users/service";
 import { guardedRoutes } from "../helpers/admin-routes";
 import {
@@ -6,11 +7,6 @@ import {
   deleteUsers,
   type TestCredentials,
 } from "../helpers/auth";
-
-const d =
-  process.env.DATABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_URL
-    ? describe
-    : describe.skip;
 
 // T040 — an account disabled mid-session is refused on its VERY NEXT request,
 // not after the token expires. The access token in the jar stays
