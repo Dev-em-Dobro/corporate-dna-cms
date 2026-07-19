@@ -17,8 +17,8 @@ approach if it comes back the wrong way.
 | P2 | Is **custom SMTP** configured to Resend? | Dashboard → Auth → SMTP | Built-in sender is capped at **2 emails/hour project-wide**. Invitation and recovery flows are untestable without this (D10) |
 | P3 | Is the **access token lifetime** shortened from the 1-hour default? | Dashboard → Auth → Sessions | Bounds the window in which a banned account can still refresh. 15 min suggested (D5) |
 | P4 | Which **plan tier**, and is PITR enabled? | Dashboard → Billing | Free tier has **no backups and no PITR**. No longer blocks cutover (nothing to lose yet) — but settle it before the CMS holds content anyone would miss (R2) |
-| P5 | Does the **deploy gate** pass? | `git log -1 --format='%ae'` | Production deploys require author `impulseaisolutions@gmail.com` or the deploy is blocked (R8) |
-| P6 | Is the **working tree clean**? | `git status` | Substantial uncommitted changes across auth/UI/config complicate rollback (R10) |
+| ~~P5~~ | ~~Deploy gate~~ | `git log -1 --format='%ae'` | **Resolved 2026-07-18** — the gate was already passing; repo-local `user.email` now matches so future commits keep passing (R8) |
+| ~~P6~~ | ~~Clean working tree~~ | `git status` | **Resolved 2026-07-18** — committed as `65c4d88` and `685341f` (R10) |
 
 ---
 

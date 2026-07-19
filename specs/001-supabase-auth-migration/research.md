@@ -342,7 +342,7 @@ on its default `drizzle` schema.
 | **R5** | Unverified-factor lifecycle undocumented; 10-factor cap | Abandoned enrolments may accumulate and eventually block enrolment | Verify empirically; mitigate with `listFactors()` + `unenroll()` before enrol |
 | **R6** | `drizzle-kit pull` bug against the `auth` schema; fix status in 0.45 unknown | Broken introspection | Avoided by design (`schemaFilter: ['public']` + `authUsers`) |
 | **R7** | `attachDatabasePool()` compatibility with `postgres.js` unverified; Vercel and Supabase guidance conflict on global-scope clients | Connection exhaustion under Fluid Compute | Test under load; fall back to `pg` + `node-postgres` if needed |
-| **R8** | Production deploys require HEAD commit author `impulseaisolutions@gmail.com`; current git identity does not match | **Cutover cannot ship** | Resolve before scheduling cutover |
+| **R8** | ~~Deploy gate~~ | — | **RESOLVED 2026-07-18.** Initially recorded as "current identity does not match" — that was wrong. HEAD and all prior commits were already authored `impulseaisolutions@gmail.com`; the gate was passing. Only the repo's `user.email` config diverged, which would have broken the *next* commit. Repo-local identity now set to match |
 | **R9** | `signOut()` defaults to `scope: 'global'` — signs out every device | Surprising UX regression versus today's per-session logout | Pass `{ scope: 'local' }` explicitly |
 | **R10** | Uncommitted working-tree changes across auth, UI and config | Complicates rollback and review | Resolve before implementation begins |
 

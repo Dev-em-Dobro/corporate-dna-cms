@@ -62,7 +62,7 @@ the affected requirements were rewritten rather than deleted so the reasoning st
 - MFA challenge/verify: **15 requests/hour per IP address**, platform-imposed, not configurable, shared across everyone behind one egress IP
 - Access tokens cannot be revoked before expiry — mitigated by the per-request status read plus a shortened token lifetime
 - Supabase free tier has **no automated backups and no PITR**
-- Production deploys require HEAD commit author `impulseaisolutions@gmail.com`
+- Production deploys require HEAD commit author `impulseaisolutions@gmail.com` (satisfied — repo-local git identity set to match)
 
 **Scale/Scope**: internal CMS, small editor population, no established user base, **empty database**. 7 tables, 21 API routes (13 admin), ~10 files touched in `lib/auth` and `lib/users`.
 
