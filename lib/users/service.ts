@@ -121,9 +121,12 @@ export async function updateUser(
 /**
  * Clear a user's second factor so they can enrol again — for a lost phone.
  *
- * Deleting a verified factor signs the user out of every active session, which
- * is the behaviour we want: the old factor stops working immediately rather
- * than at the end of the current session.
+ * What actually happens to a live session (verified empirically, 2026-07-19 —
+ * the docs' "signs out all sessions" claim does NOT hold on the platform):
+ * the session survives, but on its next token refresh it is downgraded to
+ * aal1, at which point the guards refuse it and route to re-enrolment. The
+ * already-issued access token keeps aal2 until it expires — that staleness
+ * window is why the token lifetime is shortened to 15 minutes (T003).
  */
 export async function resetMfa(id: string): Promise<void> {
   const [target] = await db.select().from(profiles).where(eq(profiles.id, id));

@@ -1,56 +1,60 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { StatusMessage } from "@/components/ui/Feedback";
 import { input, buttonPrimary } from "@/components/ui/styles";
 
-export default function LoginForm({
-  initialStep = "password",
-}: {
-  initialStep?: "password" | "mfa";
-}) {
+/**
+ * Two-phase form: the password fields, and — only when the API demands it —
+ * an inline MFA challenge. A recovery link grants an aal1 session, and for an
+ * account with a verified factor the password API refuses at aal1 with
+ * `next: "mfa"`; satisfying the code here and retrying keeps the whole flow on
+ * one screen instead of bouncing through the login page mid-recovery.
+ */
+export default function UpdatePasswordForm() {
   const router = useRouter();
-  const [step, setStep] = useState<"password" | "mfa">(initialStep);
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [code, setCode] = useState("");
+  const [needsMfa, setNeedsMfa] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const codeRef = useRef<HTMLInputElement>(null);
 
-  // Moving to the MFA step is a context change — put focus where input is due.
   useEffect(() => {
-    if (step === "mfa") codeRef.current?.focus();
-  }, [step]);
+    if (needsMfa) codeRef.current?.focus();
+  }, [needsMfa]);
+
+  async function changePassword() {
+    const res = await fetch("/api/auth/password", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (res.ok) {
+      router.push("/");
+      router.refresh();
+      return;
+    }
+    if (res.status === 403 && body.next === "mfa") {
+      setNeedsMfa(true);
+      return;
+    }
+    setError(body.error ?? "Could not update the password.");
+  }
 
   async function submitPassword(e: React.FormEvent) {
     e.preventDefault();
+    if (password !== confirm) {
+      setError("The passwords do not match.");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const body = await res.json();
-      if (!res.ok) return setError(body.error ?? "Login failed");
-
-      /**
-       * Branch on `next`, not on a challenge id. "enrol" and "mfa" both follow
-       * a valid password and both look like aal1 — the difference is whether a
-       * verified factor exists, and they need opposite destinations.
-       */
-      if (body.next === "enrol") {
-        router.push("/auth/enrol");
-      } else if (body.next === "mfa") {
-        setStep("mfa");
-      } else {
-        router.push("/");
-      }
-      router.refresh();
+      await changePassword();
     } catch {
       setError("Could not reach the server. Check your connection and retry.");
     } finally {
@@ -68,10 +72,10 @@ export default function LoginForm({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ code }),
       });
-      const body = await res.json();
-      if (!res.ok) return setError(body.error ?? "Verification failed");
-      router.push("/");
-      router.refresh();
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) return setError(body.error ?? "Verification failed.");
+      // Factor satisfied — the pending password change can now go through.
+      await changePassword();
     } catch {
       setError("Could not reach the server. Check your connection and retry.");
     } finally {
@@ -84,52 +88,49 @@ export default function LoginForm({
       <p className="text-xs font-semibold uppercase tracking-widest text-brand-dark">
         Corporate DNA
       </p>
-      <h1 className="mt-1 mb-6 text-2xl font-bold text-ink">CMS sign in</h1>
+      <h1 className="mt-1 mb-6 text-2xl font-bold text-ink">Set a new password</h1>
 
-      {/* Errors render above the form so they precede the fields they describe. */}
-      {error && <StatusMessage tone="error" className="mb-4">{error}</StatusMessage>}
+      {error && (
+        <StatusMessage tone="error" className="mb-4">
+          {error}
+        </StatusMessage>
+      )}
 
-      {step === "password" ? (
+      {!needsMfa ? (
         <form onSubmit={submitPassword} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="email" className="text-sm font-medium text-ink">
-              Email
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="username"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={input}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
             <label htmlFor="password" className="text-sm font-medium text-ink">
-              Password
+              New password
             </label>
             <input
               id="password"
               name="password"
               type="password"
-              autoComplete="current-password"
+              autoComplete="new-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className={input}
             />
           </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="confirm" className="text-sm font-medium text-ink">
+              Confirm new password
+            </label>
+            <input
+              id="confirm"
+              name="confirm"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              className={input}
+            />
+          </div>
           <button disabled={busy} aria-busy={busy} className={buttonPrimary}>
-            {busy ? "Signing in…" : "Continue"}
+            {busy ? "Saving…" : "Save password"}
           </button>
-          <Link
-            href="/auth/recover"
-            className="self-start text-sm text-muted underline"
-          >
-            Forgot your password?
-          </Link>
         </form>
       ) : (
         <form onSubmit={submitMfa} className="flex flex-col gap-4">
@@ -138,7 +139,8 @@ export default function LoginForm({
               Verification code
             </label>
             <p id="code-hint" className="text-sm text-muted">
-              Enter the 6-digit code from your authenticator app.
+              Changing your password also needs the 6-digit code from your
+              authenticator app.
             </p>
             <input
               id="code"
@@ -156,7 +158,7 @@ export default function LoginForm({
             />
           </div>
           <button disabled={busy} aria-busy={busy} className={buttonPrimary}>
-            {busy ? "Verifying…" : "Verify"}
+            {busy ? "Verifying…" : "Verify and save"}
           </button>
         </form>
       )}

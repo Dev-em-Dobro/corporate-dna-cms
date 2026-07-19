@@ -17,7 +17,7 @@ export interface SessionPayload {
 }
 
 /** Assurance state, derived from the JWT `aal` claim plus enrolled factors. */
-type Assurance =
+export type Assurance =
   | "none" // no factor enrolled yet -> bootstrap (FR-029)
   | "pending" // factor enrolled, not satisfied this session
   | "satisfied";
@@ -70,6 +70,24 @@ const resolve = cache(async (): Promise<Resolved | null> => {
   };
 });
 
+/**
+ * Pure assurance resolution — exported for unit testing (T080).
+ *
+ * In `currentLevel`/`nextLevel` terms: aal2/aal2 -> satisfied; aal1/aal2
+ * (factor exists, unsatisfied) -> pending; aal1/aal1 (no factor) -> none; a
+ * missing/null level is treated as aal1. The stale-JWT aal2/aal1 case — the
+ * token still claims aal2 after the factor was deleted — resolves "satisfied"
+ * deliberately: an access token cannot be revoked, so this window exists no
+ * matter what we do here, and it is bounded by the (shortened) token lifetime.
+ */
+export function assuranceFromClaims(
+  aal: unknown,
+  verifiedFactorCount: number,
+): Assurance {
+  if (aal === "aal2") return "satisfied";
+  return verifiedFactorCount > 0 ? "pending" : "none";
+}
+
 async function resolveAssurance(
   supabase: Awaited<ReturnType<typeof createClient>>,
   aal: unknown,
@@ -83,7 +101,7 @@ async function resolveAssurance(
   const { data, error } = await supabase.auth.mfa.listFactors();
   if (error) return "pending"; // fail closed
   const verified = data?.totp?.filter((f) => f.status === "verified") ?? [];
-  return verified.length > 0 ? "pending" : "none";
+  return assuranceFromClaims(aal, verified.length);
 }
 
 /** Require an authenticated, enabled user with a satisfied second factor. */
