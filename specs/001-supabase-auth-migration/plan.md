@@ -56,7 +56,7 @@ the affected requirements were rewritten rather than deleted so the reasoning st
 
 **Project Type**: Web application — Next.js App Router, admin UI + authoring API + published read API in one deployment
 
-**Performance Goals**: no regression in guarded-request latency. Guards resolve once per render pass via React `cache()`. `getClaims()` is network-free **only** if the project uses asymmetric signing keys — unverified (risk R4).
+**Performance Goals**: no regression in guarded-request latency. Guards resolve once per render pass via React `cache()`. `getClaims()` is network-free — **confirmed**: the project signs with `ES256` (`kty: EC`, P-256), so JWTs verify against a cached JWKS with no round-trip to the Auth server (risk R4 closed).
 
 **Constraints**:
 - MFA challenge/verify: **15 requests/hour per IP address**, platform-imposed, not configurable, shared across everyone behind one egress IP

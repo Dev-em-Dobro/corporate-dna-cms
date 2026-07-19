@@ -31,8 +31,11 @@ the Auth server on every call**. `getClaims()` verifies the JWT against a cached
 is network-free — **but only when the project uses asymmetric (ECC/RSA) signing keys**. On legacy
 symmetric HS256 projects it falls back to a server request.
 
-**Consequence**: verifying the project's signing-key mode is a prerequisite task, not a detail. See
-risk R4.
+**Consequence — resolved 2026-07-18**: the project's JWKS endpoint returns a single `ES256` key
+(`kty: EC`, curve P-256), so the signing keys **are asymmetric** and `getClaims()` is genuinely
+network-free. This was the highest-impact open unknown in the plan and it landed on the favourable
+side: the guards can run on all 13 admin routes without a per-call round-trip to the Auth server.
+Risk R4 is closed.
 
 **Alternatives considered**: `getUser()` everywhere (correct but a network hop per guard call, and
 guards run on every one of 13 admin routes); `getSession()` (rejected outright — unsafe).
@@ -338,7 +341,7 @@ on its default `drizzle` schema.
 | **R1** | MFA challenge/verify is rate-limited to **15 requests/hour per IP address**, not per user, and is **not configurable** | Users behind one office NAT share the budget; a few mistyped codes can lock out everyone | Design constraint. Surface remaining attempts in the UI; document the failure mode. No technical fix exists |
 | **R2** | Supabase free tier has no backups and no PITR | DR posture regresses versus Neon | **No longer blocks cutover** (nothing to lose yet). Becomes real the moment content exists — decide before the CMS carries anything anyone would miss: accept scheduled dumps, or budget Pro + PITR |
 | **R3** | Access tokens cannot be revoked before expiry | FR-006/FR-009 unsatisfiable by Supabase alone | Mitigated by D5 (DB status check per request) + shortened token lifetime |
-| **R4** | Unknown whether the project uses asymmetric signing keys | Determines whether `getClaims()` costs zero or one network hop per guard call | Verify in dashboard before implementation. Highest-value unknown |
+| ~~**R4**~~ | ~~Signing key mode unknown~~ | — | **CLOSED 2026-07-18 — asymmetric confirmed.** JWKS returns a single `ES256` key (`kty: EC`, P-256). `getClaims()` is network-free; D2 holds as written |
 | **R5** | Unverified-factor lifecycle undocumented; 10-factor cap | Abandoned enrolments may accumulate and eventually block enrolment | Verify empirically; mitigate with `listFactors()` + `unenroll()` before enrol |
 | **R6** | `drizzle-kit pull` bug against the `auth` schema; fix status in 0.45 unknown | Broken introspection | Avoided by design (`schemaFilter: ['public']` + `authUsers`) |
 | **R7** | `attachDatabasePool()` compatibility with `postgres.js` unverified; Vercel and Supabase guidance conflict on global-scope clients | Connection exhaustion under Fluid Compute | Test under load; fall back to `pg` + `node-postgres` if needed |

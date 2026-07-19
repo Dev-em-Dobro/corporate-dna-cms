@@ -91,8 +91,9 @@ today.
 
 **`getClaims()` vs `getUser()`**: `getUser()` contacts the Auth server on every call, which would
 mean a network round-trip per guard on every one of 13 routes. `getClaims()` verifies against a
-cached JWKS endpoint instead — **but only if the project uses asymmetric signing keys** (risk R4).
-Confirm before implementation; on a legacy symmetric project the two are equivalent in cost.
+cached JWKS endpoint instead — which is only cheaper if the project uses asymmetric signing keys.
+**Confirmed 2026-07-18**: this project signs with `ES256` (`kty: EC`, P-256), so `getClaims()` is
+network-free and this design holds as written.
 
 `getSession()` must never appear in server code. It reads local storage without re-validating and
 is user-controllable.

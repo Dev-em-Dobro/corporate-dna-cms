@@ -32,7 +32,7 @@ preserved so cross-references stay valid.
 **⚠️ T001–T006 are gates.** Each is a research finding that alters design if it comes back the wrong
 way. Do not begin Phase 2 with any of them unresolved.
 
-- [ ] T001 Confirm the Supabase project uses **asymmetric (ECC/RSA) signing keys** in Dashboard → JWT Keys; record the answer in `specs/001-supabase-auth-migration/research.md` under risk R4. Determines whether `getClaims()` costs zero or one network round-trip on every guarded request
+- [x] T001 ~~Confirm asymmetric signing keys~~ **DONE 2026-07-18 — confirmed asymmetric.** The project's JWKS endpoint returns a single `ES256` key (`kty: EC`, curve P-256). `getClaims()` therefore verifies JWTs against the cached JWKS with **zero network round-trips**, and the guard design in research D2 holds as written. The only per-request cost is the `profiles` read, which the codebase already pays today. Risk R4 closed
 - [ ] T002 [P] Configure custom SMTP to Resend in Dashboard → Auth → SMTP. The built-in sender is capped at **2 emails/hour project-wide**, which makes US5 and the invitation flow untestable
 - [ ] T003 [P] Shorten the access-token lifetime from the 1-hour default to 15 minutes in Dashboard → Auth → Sessions. Bounds the window in which a banned account can still refresh (research D5/R3)
 - [ ] T004 [P] Record the Supabase plan tier and PITR status in `research.md` risk R2. Does not block cutover with an empty database, but must be a dated decision rather than an omission

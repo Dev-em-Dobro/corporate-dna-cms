@@ -13,7 +13,7 @@ approach if it comes back the wrong way.
 
 | # | Check | Where | Why it blocks |
 |---|---|---|---|
-| P1 | Does the Supabase project use **asymmetric (ECC/RSA) signing keys**? | Dashboard → JWT Keys | Determines whether `getClaims()` costs zero or one network hop per guard call, on every request (risk R4) |
+| ~~P1~~ | ~~Asymmetric signing keys?~~ | JWKS endpoint | **Resolved 2026-07-18 — yes, `ES256` / `kty: EC` / P-256.** `getClaims()` is network-free (risk R4 closed) |
 | P2 | Is **custom SMTP** configured to Resend? | Dashboard → Auth → SMTP | Built-in sender is capped at **2 emails/hour project-wide**. Invitation and recovery flows are untestable without this (D10) |
 | P3 | Is the **access token lifetime** shortened from the 1-hour default? | Dashboard → Auth → Sessions | Bounds the window in which a banned account can still refresh. 15 min suggested (D5) |
 | P4 | Which **plan tier**, and is PITR enabled? | Dashboard → Billing | Free tier has **no backups and no PITR**. No longer blocks cutover (nothing to lose yet) — but settle it before the CMS holds content anyone would miss (R2) |
