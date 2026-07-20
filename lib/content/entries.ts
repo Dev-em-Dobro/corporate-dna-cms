@@ -17,6 +17,7 @@ import {
   defForType,
   type ContentType,
 } from "./types";
+import { sanitizeRichText } from "./sanitize";
 import { slugify } from "./slug";
 
 export type ServiceResult<T> =
@@ -108,7 +109,7 @@ export async function createEntry(
 ): Promise<ServiceResult<ContentEntry>> {
   const v = validateContent(type, input.data);
   if (!v.ok) return { ok: false, errors: v.errors! };
-  const data = v.data!;
+  const data = sanitizeRichText(type, v.data!);
   const locale = input.locale ?? "en";
   const slug = (input.slug?.trim() || slugify(deriveTitle(type, data))).toLowerCase();
 
@@ -170,7 +171,7 @@ export async function updateEntry(
 ): Promise<ServiceResult<ContentEntry>> {
   const v = validateContent(type, input.data);
   if (!v.ok) return { ok: false, errors: v.errors! };
-  const data = v.data!;
+  const data = sanitizeRichText(type, v.data!);
 
   const entry = await db.transaction(async (tx) => {
     const [current] = await tx

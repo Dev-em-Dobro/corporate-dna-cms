@@ -3,6 +3,7 @@ import type { ContentType } from "./types";
 export type FieldKind =
   | "text"
   | "textarea"
+  | "richtext"
   | "url"
   | "media"
   | "date"
@@ -26,17 +27,17 @@ export interface FieldSpec {
 export const FIELDS: Record<ContentType, FieldSpec[]> = {
   case: [
     { name: "title", label: "Title", kind: "text", required: true },
-    { name: "summary", label: "Summary", kind: "textarea" },
-    { name: "challenge", label: "Challenge", kind: "textarea", required: true },
-    { name: "approach", label: "Approach", kind: "textarea", required: true },
-    { name: "outcome", label: "Outcome", kind: "textarea", required: true },
+    { name: "summary", label: "Summary", kind: "richtext" },
+    { name: "challenge", label: "Challenge", kind: "richtext", required: true },
+    { name: "approach", label: "Approach", kind: "richtext", required: true },
+    { name: "outcome", label: "Outcome", kind: "richtext", required: true },
     {
       name: "measurableResult",
       label: "Measurable result",
-      kind: "textarea",
+      kind: "richtext",
       required: true,
     },
-    { name: "clientQuote", label: "Client quote", kind: "textarea", required: true },
+    { name: "clientQuote", label: "Client quote", kind: "richtext", required: true },
     { name: "coverMediaId", label: "Cover image", kind: "media" },
     {
       name: "videoUrl",
@@ -51,17 +52,17 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
     {
       name: "problemStatement",
       label: "Problem statement",
-      kind: "textarea",
+      kind: "richtext",
       required: true,
     },
-    { name: "body", label: "Body", kind: "textarea" },
+    { name: "body", label: "Body", kind: "richtext" },
     { name: "cta", label: "CTA { label, href }", kind: "json" },
     { name: "proofRefs", label: "Proof references", kind: "stringList" },
   ],
   person: [
     { name: "name", label: "Name", kind: "text", required: true },
     { name: "role", label: "Role", kind: "text", required: true },
-    { name: "bio", label: "Bio", kind: "textarea", required: true },
+    { name: "bio", label: "Bio", kind: "richtext", required: true },
     { name: "photoMediaId", label: "Photo", kind: "media" },
     { name: "regionSlug", label: "Region slug", kind: "text" },
     { name: "linkedin", label: "LinkedIn URL", kind: "url" },
@@ -70,26 +71,26 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
     { name: "name", label: "Name", kind: "text", required: true },
     { name: "city", label: "City", kind: "text", required: true },
     { name: "country", label: "Country", kind: "text" },
-    { name: "summary", label: "Summary", kind: "textarea" },
+    { name: "summary", label: "Summary", kind: "richtext" },
     { name: "addressLines", label: "Address lines", kind: "stringList" },
   ],
   insight: [
     { name: "title", label: "Title", kind: "text", required: true },
-    { name: "excerpt", label: "Excerpt", kind: "textarea" },
-    { name: "body", label: "Body", kind: "textarea", required: true },
+    { name: "excerpt", label: "Excerpt", kind: "richtext" },
+    { name: "body", label: "Body", kind: "richtext", required: true },
     { name: "coverMediaId", label: "Cover image", kind: "media" },
     { name: "publishedDate", label: "Published date", kind: "date" },
   ],
   page_5h: [
     { name: "title", label: "Title", kind: "text", required: true },
-    { name: "intro", label: "Intro", kind: "textarea" },
+    { name: "intro", label: "Intro", kind: "richtext" },
     { name: "elements", label: "Elements [ {key,title,description} ]", kind: "json" },
     { name: "ctaLabel", label: "CTA label", kind: "text" },
     { name: "ctaHref", label: "CTA href", kind: "text" },
   ],
   page_book: [
     { name: "title", label: "Title", kind: "text", required: true },
-    { name: "description", label: "Description", kind: "textarea", required: true },
+    { name: "description", label: "Description", kind: "richtext", required: true },
     { name: "coverMediaId", label: "Cover image", kind: "media" },
     { name: "purchaseUrl", label: "Purchase URL", kind: "url", required: true },
   ],
@@ -99,7 +100,7 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
   ],
   page_legal: [
     { name: "title", label: "Title", kind: "text", required: true },
-    { name: "body", label: "Body", kind: "textarea", required: true },
+    { name: "body", label: "Body", kind: "richtext", required: true },
   ],
 };
 

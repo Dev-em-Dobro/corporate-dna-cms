@@ -5,7 +5,6 @@ import { contentEntries } from "@/db/schema";
 import { SINGLETON_PAGES, defForType } from "@/lib/content/types";
 import { FIELDS, emptyData } from "@/lib/content/ui-fields";
 import ContentEditor from "@/components/ContentEditor";
-import VersionsPanel from "@/components/VersionsPanel";
 
 export default async function SingletonEditor({
   params,
@@ -38,17 +37,14 @@ export default async function SingletonEditor({
     : { data: emptyData(cfg.type) };
 
   return (
-    <>
-      <ContentEditor
-        apiType={cfg.type}
-        collection="pages"
-        mode="singleton"
-        fixedSlug={cfg.slug}
-        fields={FIELDS[cfg.type]}
-        initial={initial}
-        label={`${defForType(cfg.type).label} (${key})`}
-      />
-      {entry && <VersionsPanel apiType={cfg.type} id={entry.id} />}
-    </>
+    <ContentEditor
+      apiType={cfg.type}
+      collection="pages"
+      mode="singleton"
+      fixedSlug={cfg.slug}
+      fields={FIELDS[cfg.type]}
+      initial={initial}
+      label={`${defForType(cfg.type).label} (${key})`}
+    />
   );
 }

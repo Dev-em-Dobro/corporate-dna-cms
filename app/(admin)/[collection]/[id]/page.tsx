@@ -3,7 +3,6 @@ import { SEGMENT_TO_TYPE, defForType } from "@/lib/content/types";
 import { FIELDS } from "@/lib/content/ui-fields";
 import { getEntry } from "@/lib/content/entries";
 import ContentEditor from "@/components/ContentEditor";
-import VersionsPanel from "@/components/VersionsPanel";
 
 export default async function EditEntry({
   params,
@@ -17,21 +16,18 @@ export default async function EditEntry({
   if (!entry) notFound();
 
   return (
-    <>
-      <ContentEditor
-        apiType={collection}
-        collection={collection}
-        mode="collection"
-        fields={FIELDS[type]}
-        initial={{
-          id: entry.id,
-          data: entry.data,
-          currentVersionId: entry.currentVersionId,
-          status: entry.status,
-        }}
-        label={defForType(type).label}
-      />
-      <VersionsPanel apiType={collection} id={entry.id} />
-    </>
+    <ContentEditor
+      apiType={collection}
+      collection={collection}
+      mode="collection"
+      fields={FIELDS[type]}
+      initial={{
+        id: entry.id,
+        data: entry.data,
+        currentVersionId: entry.currentVersionId,
+        status: entry.status,
+      }}
+      label={defForType(type).label}
+    />
   );
 }

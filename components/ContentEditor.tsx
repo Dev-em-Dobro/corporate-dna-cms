@@ -3,7 +3,14 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { FieldSpec } from "@/lib/content/ui-fields";
+import {
+  createAutosaveScheduler,
+  shouldSave,
+  type AutosaveScheduler,
+} from "@/lib/content/autosave";
 import MediaPicker from "./MediaPicker";
+import RichTextEditor from "./RichTextEditor";
+import VersionHistory from "./VersionHistory";
 import { StatusBadge, StatusMessage } from "./ui/Feedback";
 import {
   buttonDark,
@@ -51,7 +58,23 @@ export default function ContentEditor({
   } | null>(null);
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [versionsOpen, setVersionsOpen] = useState(false);
+  // Remount seed: bumped after a restore so uncontrolled editors (Quill)
+  // re-initialise with the restored content.
+  const [revision, setRevision] = useState(0);
+  // True while ANY write (manual save, auto-save, restore) is in flight — the
+  // single guard that keeps those paths from overlapping.
+  const savingRef = useRef(false);
   const errorSummaryRef = useRef<HTMLDivElement>(null);
+
+  // Auto-save: a debounced scheduler saves the draft ~10s after the last edit
+  // and on blur. `tryAutosaveRef` always holds the latest decision so the
+  // scheduler (created once) reads current state without being recreated.
+  const tryAutosaveRef = useRef<() => void>(() => {});
+  const autosaveRef = useRef<AutosaveScheduler | null>(null);
+  if (!autosaveRef.current) {
+    autosaveRef.current = createAutosaveScheduler(() => tryAutosaveRef.current());
+  }
 
   // Raw JSON text for `json` fields (parsed on save).
   const [jsonText, setJsonText] = useState<Record<string, string>>(() => {
@@ -80,9 +103,45 @@ export default function ContentEditor({
     if (Object.keys(errors).length > 0) errorSummaryRef.current?.focus();
   }, [errors]);
 
+  // Keep the auto-save decision current on every render (reads latest state).
+  useEffect(() => {
+    tryAutosaveRef.current = () => {
+      if (
+        shouldSave({
+          dirty,
+          hasId: Boolean(id),
+          inFlight: savingRef.current,
+          payloadValid: jsonFieldsValid(),
+        })
+      ) {
+        void saveDraft();
+      }
+    };
+  });
+
+  // Cancel any pending auto-save when the editor unmounts.
+  useEffect(() => {
+    return () => autosaveRef.current?.cancel();
+  }, []);
+
   function set(name: string, value: unknown) {
     setDirty(true);
     setData((d) => ({ ...d, [name]: value }));
+    autosaveRef.current?.schedule();
+  }
+
+  /** True if all `json` fields currently parse — a non-mutating validity check. */
+  function jsonFieldsValid(): boolean {
+    for (const f of fields) {
+      if (f.kind === "json") {
+        try {
+          JSON.parse(jsonText[f.name] || "null");
+        } catch {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   function buildPayload(): Record<string, unknown> | null {
@@ -100,15 +159,21 @@ export default function ContentEditor({
     return payload;
   }
 
-  async function save() {
-    setBusy(true);
+  /**
+   * Save the current draft. Shared by the manual button, auto-save, and the
+   * restore flow. Returns the outcome so callers (restore) can chain safely.
+   * Guards against overlapping writes via `savingRef`.
+   */
+  async function saveDraft(): Promise<{ ok: boolean; conflict?: boolean }> {
+    if (savingRef.current) return { ok: false };
+    autosaveRef.current?.cancel(); // no queued auto-save should double-fire
     setMessage(null);
     setErrors({});
     const payload = buildPayload();
-    if (!payload) {
-      setBusy(false);
-      return;
-    }
+    if (!payload) return { ok: false };
+
+    savingRef.current = true;
+    setBusy(true);
     try {
       const res = id
         ? await fetch(`/api/admin/${apiType}/${id}`, {
@@ -126,17 +191,23 @@ export default function ContentEditor({
           });
       const body = await res.json();
 
-      if (res.status === 422)
-        return setErrors(body.fields ?? { _: body.error ?? "Validation failed" });
-      if (res.status === 409)
-        return setMessage({
+      if (res.status === 422) {
+        setErrors(body.fields ?? { _: body.error ?? "Validation failed" });
+        return { ok: false };
+      }
+      if (res.status === 409) {
+        setMessage({
           tone: "error",
           text:
             body.error ??
             "Someone else saved this entry while you were editing. Reload to get their changes.",
         });
-      if (!res.ok)
-        return setMessage({ tone: "error", text: body.error ?? "Save failed" });
+        return { ok: false, conflict: true };
+      }
+      if (!res.ok) {
+        setMessage({ tone: "error", text: body.error ?? "Save failed" });
+        return { ok: false };
+      }
 
       setId(body.id);
       setVersionId(body.currentVersionId ?? null);
@@ -146,12 +217,66 @@ export default function ContentEditor({
       if (!id && mode === "collection") {
         router.replace(`/${collection}/${body.id}`);
       }
+      return { ok: true };
     } catch {
       setMessage({
         tone: "error",
         text: "Could not reach the server. Your edits are still here — retry.",
       });
+      return { ok: false };
     } finally {
+      savingRef.current = false;
+      setBusy(false);
+    }
+  }
+
+  /**
+   * Restore a previous version. If there are unsaved on-screen changes, save
+   * them as a draft first so nothing is lost, then apply the restore.
+   */
+  async function restoreVersion(restoreId: string) {
+    if (!id || savingRef.current) return;
+    autosaveRef.current?.cancel();
+    if (dirty) {
+      const r = await saveDraft();
+      if (!r.ok) return; // error already surfaced; keep on-screen work
+    }
+
+    savingRef.current = true;
+    setBusy(true);
+    setMessage(null);
+    setErrors({});
+    try {
+      const res = await fetch(`/api/admin/${apiType}/${id}/restore`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ versionId: restoreId }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        setMessage({ tone: "error", text: body.error ?? "Restore failed" });
+        return;
+      }
+
+      const restored = (body.data ?? {}) as Record<string, unknown>;
+      setData(restored);
+      // Re-seed the raw JSON editors from the restored data.
+      setJsonText(() => {
+        const m: Record<string, string> = {};
+        for (const f of fields)
+          if (f.kind === "json")
+            m[f.name] = JSON.stringify(restored[f.name] ?? null, null, 2);
+        return m;
+      });
+      setVersionId(body.currentVersionId ?? null);
+      setStatus(body.status ?? status);
+      setDirty(false);
+      setRevision((n) => n + 1); // remount editors with restored content
+      setMessage({ tone: "success", text: "Version restored." });
+    } catch {
+      setMessage({ tone: "error", text: "Could not reach the server. Retry." });
+    } finally {
+      savingRef.current = false;
       setBusy(false);
     }
   }
@@ -216,9 +341,18 @@ export default function ContentEditor({
           </div>
         </div>
         {id && (
-          <button type="button" onClick={preview} className={buttonSecondary}>
-            Preview
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setVersionsOpen(true)}
+              className={buttonSecondary}
+            >
+              Version history
+            </button>
+            <button type="button" onClick={preview} className={buttonSecondary}>
+              Preview
+            </button>
+          </div>
         )}
       </div>
 
@@ -248,7 +382,12 @@ export default function ContentEditor({
         </div>
       )}
 
-      <div className="flex flex-col gap-5">
+      {/* Blur anywhere in the form flushes a pending auto-save immediately.
+          onBlur bubbles (focusout), so it also covers the Quill editors. */}
+      <div
+        className="flex flex-col gap-5"
+        onBlur={() => autosaveRef.current?.flush()}
+      >
         {fields.map((f) => {
           const fieldId = `${formId}-${f.name}`;
           const helpId = f.help ? `${fieldId}-help` : undefined;
@@ -256,9 +395,11 @@ export default function ContentEditor({
           const describedBy =
             [helpId, errorId].filter(Boolean).join(" ") || undefined;
 
-          // `facets` and `media` render multiple controls, so they get a group
-          // label rather than a <label for> pointing at one input.
-          const isGroup = f.kind === "facets" || f.kind === "media";
+          // `facets`, `media` and `richtext` render controls that aren't a
+          // single native input, so they get a group label rather than a
+          // <label for> pointing at one input.
+          const isGroup =
+            f.kind === "facets" || f.kind === "media" || f.kind === "richtext";
 
           return (
             <div key={f.name} className="flex flex-col gap-1.5">
@@ -308,7 +449,7 @@ export default function ContentEditor({
       <div className="sticky bottom-0 mt-8 flex flex-wrap items-center gap-3 border-t border-line bg-white/95 py-4 backdrop-blur">
         <button
           type="button"
-          onClick={save}
+          onClick={() => saveDraft()}
           disabled={busy}
           aria-busy={busy}
           className={buttonDark}
@@ -341,6 +482,21 @@ export default function ContentEditor({
           <StatusMessage tone={message.tone}>{message.text}</StatusMessage>
         )}
       </div>
+
+      {id && (
+        <VersionHistory
+          open={versionsOpen}
+          onClose={() => setVersionsOpen(false)}
+          apiType={apiType}
+          id={id}
+          currentVersionId={versionId}
+          busy={busy}
+          onRestore={async (vid) => {
+            await restoreVersion(vid);
+            setVersionsOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 
@@ -364,6 +520,17 @@ export default function ContentEditor({
             rows={3}
             value={String(val ?? "")}
             onChange={(e) => set(f.name, e.target.value)}
+          />
+        );
+      case "richtext":
+        return (
+          <RichTextEditor
+            value={String(val ?? "")}
+            onChange={(html) => set(f.name, html)}
+            labelledBy={`${fieldId}-label`}
+            describedBy={describedBy}
+            invalid={invalid}
+            resetKey={revision}
           />
         );
       case "media":
