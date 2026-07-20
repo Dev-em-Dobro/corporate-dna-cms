@@ -140,6 +140,22 @@ export default function AdminNav({
           </button>
         </div>
 
+        <form
+          action="/api/auth/logout"
+          method="post"
+          className="mt-6 border-b border-line-strong pb-4"
+        >
+          <p className="mb-1 truncate text-xs text-muted" title={email}>
+            {email}
+          </p>
+          <button
+            type="submit"
+            className="flex min-h-11 w-full items-center rounded px-2 text-sm font-medium text-ink transition-colors duration-150 hover:bg-white"
+          >
+            Sign out
+          </button>
+        </form>
+
         <nav aria-label="Sections" className="mt-6 flex flex-col gap-0.5">
           {items.map((n) => {
             const active = isActive(n.href);
@@ -160,22 +176,6 @@ export default function AdminNav({
             );
           })}
         </nav>
-
-        <form
-          action="/api/auth/logout"
-          method="post"
-          className="mt-auto border-t border-line-strong pt-4"
-        >
-          <p className="mb-1 truncate text-xs text-muted" title={email}>
-            {email}
-          </p>
-          <button
-            type="submit"
-            className="flex min-h-11 w-full items-center rounded px-2 text-sm font-medium text-ink transition-colors duration-150 hover:bg-white"
-          >
-            Sign out
-          </button>
-        </form>
       </aside>
     </>
   );
