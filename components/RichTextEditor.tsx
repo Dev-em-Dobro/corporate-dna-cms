@@ -27,6 +27,7 @@ export default function RichTextEditor({
   describedBy,
   invalid,
   resetKey,
+  disabled,
 }: {
   value: string;
   onChange: (html: string) => void;
@@ -34,6 +35,7 @@ export default function RichTextEditor({
   describedBy?: string;
   invalid?: boolean;
   resetKey?: number;
+  disabled?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const quillRef = useRef<import("quill").default | null>(null);
@@ -42,9 +44,11 @@ export default function RichTextEditor({
   // Latest props kept in refs so the mount effect never needs to re-run.
   const onChangeRef = useRef(onChange);
   const valueRef = useRef(value);
+  const disabledRef = useRef(disabled);
   useEffect(() => {
     onChangeRef.current = onChange;
     valueRef.current = value;
+    disabledRef.current = disabled;
   });
 
   useEffect(() => {
@@ -75,6 +79,7 @@ export default function RichTextEditor({
 
       if (labelledBy) quill.root.setAttribute("aria-labelledby", labelledBy);
       if (describedBy) quill.root.setAttribute("aria-describedby", describedBy);
+      quill.enable(!disabledRef.current); // apply lock state once loaded
 
       quill.on("text-change", () => {
         if (seedingRef.current) return; // ignore programmatic re-seeds
@@ -111,13 +116,18 @@ export default function RichTextEditor({
     seedingRef.current = false;
   }, [resetKey]);
 
+  // Lock/unlock editing while an explicit save is in flight.
+  useEffect(() => {
+    quillRef.current?.enable(!disabled);
+  }, [disabled]);
+
   return (
     // Give the editable area a taller default (min-height, so it still grows
     // with content). Targets Quill's `.ql-editor` via an arbitrary variant.
     <div
       className={`[&_.ql-editor]:min-h-52 ${
         invalid ? "rounded-md ring-1 ring-danger" : ""
-      }`}
+      } ${disabled ? "opacity-60" : ""}`}
     >
       <div ref={containerRef} />
     </div>

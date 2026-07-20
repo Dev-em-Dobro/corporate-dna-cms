@@ -57,6 +57,9 @@ export default function ContentEditor({
     text: string;
   } | null>(null);
   const [busy, setBusy] = useState(false);
+  // Fields are locked during explicit saves (manual save, publish, restore) —
+  // but NOT during background auto-save, so typing is never interrupted.
+  const [locked, setLocked] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(false);
   // Remount seed: bumped after a restore so uncontrolled editors (Quill)
@@ -114,7 +117,7 @@ export default function ContentEditor({
           payloadValid: jsonFieldsValid(),
         })
       ) {
-        void saveDraft();
+        void saveDraft({ silent: true });
       }
     };
   });
@@ -164,7 +167,9 @@ export default function ContentEditor({
    * restore flow. Returns the outcome so callers (restore) can chain safely.
    * Guards against overlapping writes via `savingRef`.
    */
-  async function saveDraft(): Promise<{ ok: boolean; conflict?: boolean }> {
+  async function saveDraft(
+    opts: { silent?: boolean } = {},
+  ): Promise<{ ok: boolean; conflict?: boolean }> {
     if (savingRef.current) return { ok: false };
     autosaveRef.current?.cancel(); // no queued auto-save should double-fire
     setMessage(null);
@@ -174,6 +179,8 @@ export default function ContentEditor({
 
     savingRef.current = true;
     setBusy(true);
+    // Background (auto-save) and restore's pre-save leave the lock to the caller.
+    if (!opts.silent) setLocked(true);
     try {
       const res = id
         ? await fetch(`/api/admin/${apiType}/${id}`, {
@@ -227,6 +234,7 @@ export default function ContentEditor({
     } finally {
       savingRef.current = false;
       setBusy(false);
+      if (!opts.silent) setLocked(false);
     }
   }
 
@@ -237,9 +245,13 @@ export default function ContentEditor({
   async function restoreVersion(restoreId: string) {
     if (!id || savingRef.current) return;
     autosaveRef.current?.cancel();
+    setLocked(true); // stays locked across the pre-save and the restore
     if (dirty) {
-      const r = await saveDraft();
-      if (!r.ok) return; // error already surfaced; keep on-screen work
+      const r = await saveDraft({ silent: true });
+      if (!r.ok) {
+        setLocked(false);
+        return; // error already surfaced; keep on-screen work
+      }
     }
 
     savingRef.current = true;
@@ -278,12 +290,14 @@ export default function ContentEditor({
     } finally {
       savingRef.current = false;
       setBusy(false);
+      setLocked(false);
     }
   }
 
   async function doAction(action: "publish" | "unpublish") {
     if (!id) return;
     setBusy(true);
+    setLocked(true);
     setMessage(null);
     setErrors({});
     try {
@@ -304,6 +318,7 @@ export default function ContentEditor({
       setMessage({ tone: "error", text: "Could not reach the server. Retry." });
     } finally {
       setBusy(false);
+      setLocked(false);
     }
   }
 
@@ -508,6 +523,7 @@ export default function ContentEditor({
       "aria-describedby": describedBy,
       "aria-invalid": invalid || undefined,
       "aria-required": f.required || undefined,
+      disabled: locked,
     };
     const ring = invalid ? "border-danger" : "";
 
@@ -531,6 +547,7 @@ export default function ContentEditor({
             describedBy={describedBy}
             invalid={invalid}
             resetKey={revision}
+            disabled={locked}
           />
         );
       case "media":
@@ -540,6 +557,7 @@ export default function ContentEditor({
             describedBy={describedBy}
             value={typeof val === "string" && val ? val : undefined}
             onChange={(mediaId) => set(f.name, mediaId ?? "")}
+            disabled={locked}
           />
         );
       case "stringList":
@@ -565,6 +583,7 @@ export default function ContentEditor({
             labelledBy={`${fieldId}-label`}
             value={val}
             onChange={(v) => set(f.name, v)}
+            disabled={locked}
           />
         );
       case "json":
@@ -602,11 +621,13 @@ function FacetsInput({
   labelledBy,
   value,
   onChange,
+  disabled,
 }: {
   fieldId: string;
   labelledBy: string;
   value: unknown;
   onChange: (v: Record<string, string[]>) => void;
+  disabled?: boolean;
 }) {
   const facets = (value as Record<string, string[]>) ?? {
     industry: [],
@@ -631,6 +652,7 @@ function FacetsInput({
               id={id}
               className={input}
               placeholder="comma, separated"
+              disabled={disabled}
               value={(facets[k] ?? []).join(", ")}
               onChange={(e) =>
                 onChange({

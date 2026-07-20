@@ -18,11 +18,13 @@ export default function MediaPicker({
   onChange,
   labelledBy,
   describedBy,
+  disabled,
 }: {
   value?: string;
   onChange: (id: string | undefined) => void;
   labelledBy?: string;
   describedBy?: string;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<MediaItem[]>([]);
@@ -117,13 +119,19 @@ export default function MediaPicker({
         ) : (
           <span className="text-sm text-muted">No media selected</span>
         )}
-        <button type="button" onClick={() => setOpen(true)} className={buttonSecondary}>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          disabled={disabled}
+          className={buttonSecondary}
+        >
           {value ? "Change" : "Choose media"}
         </button>
         {value && (
           <button
             type="button"
             onClick={() => onChange(undefined)}
+            disabled={disabled}
             className={buttonQuiet}
           >
             Clear

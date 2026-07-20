@@ -5,10 +5,10 @@
  */
 
 export const input =
-  "min-h-11 w-full rounded border border-line-strong bg-white px-3 text-sm text-ink placeholder:text-muted transition-colors duration-150 focus:border-brand-dark";
+  "min-h-11 w-full rounded border border-line-strong bg-white px-3 text-sm text-ink placeholder:text-muted transition-colors duration-150 focus:border-brand-dark disabled:cursor-not-allowed disabled:bg-paper disabled:opacity-60";
 
 export const textarea =
-  "w-full rounded border border-line-strong bg-white px-3 py-2 text-sm text-ink placeholder:text-muted transition-colors duration-150 focus:border-brand-dark";
+  "w-full rounded border border-line-strong bg-white px-3 py-2 text-sm text-ink placeholder:text-muted transition-colors duration-150 focus:border-brand-dark disabled:cursor-not-allowed disabled:bg-paper disabled:opacity-60";
 
 export const select =
   "min-h-11 rounded border border-line-strong bg-white px-2 text-sm text-ink transition-colors duration-150 focus:border-brand-dark";
