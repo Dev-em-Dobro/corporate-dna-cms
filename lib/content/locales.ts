@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { count, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { locales as localesTable, contentEntries, type Locale } from "@/db/schema";
@@ -17,9 +18,15 @@ const FALLBACK_DEFAULT = "en";
 
 // --- reads ---------------------------------------------------------------------
 
-export async function getLocales(): Promise<Locale[]> {
+/**
+ * Memoized per request (React `cache`): the registry is read on nearly every
+ * page (create picker, translation bar, list grouping, fallback), often several
+ * times. Without this each derived read would be its own round-trip to the
+ * remote database; with it they all share one query per request.
+ */
+export const getLocales = cache(async (): Promise<Locale[]> => {
   return sortLocales(await db.select().from(localesTable));
-}
+});
 
 export async function activeLocales(): Promise<Locale[]> {
   return (await getLocales()).filter((l) => l.enabled);
@@ -34,12 +41,9 @@ export async function getDefaultLocale(): Promise<string> {
 export async function resolveLocale(
   code: string | null | undefined,
 ): Promise<string> {
-  const active = await activeLocales();
+  const rows = await getLocales();
+  const active = rows.filter((l) => l.enabled);
   if (code && active.some((l) => l.code === code)) return code;
-  return rowsDefault(await getLocales());
-}
-
-function rowsDefault(rows: Locale[]): string {
   return rows.length ? resolveDefault(rows) : FALLBACK_DEFAULT;
 }
 
