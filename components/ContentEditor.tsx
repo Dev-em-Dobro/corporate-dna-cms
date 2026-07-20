@@ -306,14 +306,36 @@ export default function ContentEditor({
       });
       const body = await res.json();
       if (res.status === 422) {
-        // Publish gate failed (missing required field or a deleted media
-        // reference). Some errors are keyed by media id, not field name, so
-        // they never reach the field-error summary — always surface a message.
-        const fields = (body.fields ?? {}) as Record<string, string>;
-        setErrors(fields);
-        const detail =
-          Object.values(fields).join("; ") || body.error || "Validation failed";
-        setMessage({ tone: "error", text: `Can't ${action}: ${detail}` });
+        // Publish gate failed (missing required fields and/or a deleted media
+        // reference). Map each raw error to its field so the summary highlights
+        // it and the message lists the offending fields by name.
+        const raw = (body.fields ?? {}) as Record<string, string>;
+        const mapped: Record<string, string> = {};
+        const labels: string[] = [];
+        for (const [key, msg] of Object.entries(raw)) {
+          // Direct match = a missing/invalid field. Otherwise it's a media
+          // reference error keyed by the media id, not the field name.
+          let field = fields.find((f) => f.name === key);
+          let text = "This field is required.";
+          if (!field) {
+            field = fields.find((f) => f.kind === "media" && data[f.name] === key);
+            if (field) text = "The selected file was deleted — pick another.";
+          }
+          if (field) {
+            mapped[field.name] = text;
+            labels.push(field.label);
+          } else {
+            mapped._ = msg;
+            labels.push(msg);
+          }
+        }
+        setErrors(Object.keys(mapped).length ? mapped : raw);
+        setMessage({
+          tone: "error",
+          text: labels.length
+            ? `Can't ${action}. Please fix: ${labels.join(", ")}.`
+            : `Can't ${action}: ${body.error ?? "Validation failed"}`,
+        });
         return;
       }
       if (!res.ok)
