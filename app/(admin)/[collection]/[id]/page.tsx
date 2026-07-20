@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { SEGMENT_TO_TYPE, defForType } from "@/lib/content/types";
 import { FIELDS } from "@/lib/content/ui-fields";
-import { getEntry } from "@/lib/content/entries";
+import { getEntry, listTranslations } from "@/lib/content/entries";
+import { activeLocales, getDefaultLocale } from "@/lib/content/locales";
 import ContentEditor from "@/components/ContentEditor";
+import TranslationBar from "@/components/TranslationBar";
 
 export default async function EditEntry({
   params,
@@ -14,20 +16,37 @@ export default async function EditEntry({
   if (!type) notFound();
   const entry = await getEntry(type, id);
   if (!entry) notFound();
+  const [translations, active, defaultLocale] = await Promise.all([
+    listTranslations(entry.translationGroupId),
+    activeLocales(),
+    getDefaultLocale(),
+  ]);
 
   return (
-    <ContentEditor
-      apiType={collection}
-      collection={collection}
-      mode="collection"
-      fields={FIELDS[type]}
-      initial={{
-        id: entry.id,
-        data: entry.data,
-        currentVersionId: entry.currentVersionId,
-        status: entry.status,
-      }}
-      label={defForType(type).label}
-    />
+    <>
+      <TranslationBar
+        apiType={collection}
+        id={entry.id}
+        currentLocale={entry.locale}
+        existing={translations}
+        active={active}
+        kind="collection"
+        collection={collection}
+        defaultLocale={defaultLocale}
+      />
+      <ContentEditor
+        apiType={collection}
+        collection={collection}
+        mode="collection"
+        fields={FIELDS[type]}
+        initial={{
+          id: entry.id,
+          data: entry.data,
+          currentVersionId: entry.currentVersionId,
+          status: entry.status,
+        }}
+        label={defForType(type).label}
+      />
+    </>
   );
 }

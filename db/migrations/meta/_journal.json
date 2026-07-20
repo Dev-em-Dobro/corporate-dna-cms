@@ -8,6 +8,13 @@
       "when": 1784426254949,
       "tag": "0000_acoustic_vermin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784574697149,
+      "tag": "0002_locales",
+      "breakpoints": true
     }
   ]
 }

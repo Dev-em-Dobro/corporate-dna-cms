@@ -371,6 +371,26 @@ export async function addTranslation(
   });
 }
 
+// --- translations --------------------------------------------------------------
+
+/** Language variants of a logical piece (entries sharing a translationGroupId). */
+export async function listTranslations(translationGroupId: string) {
+  return db
+    .select({
+      id: contentEntries.id,
+      locale: contentEntries.locale,
+      status: contentEntries.status,
+    })
+    .from(contentEntries)
+    .where(
+      and(
+        eq(contentEntries.translationGroupId, translationGroupId),
+        isNull(contentEntries.deletedAt),
+      ),
+    )
+    .orderBy(contentEntries.locale);
+}
+
 // --- versions ------------------------------------------------------------------
 
 export async function listVersions(entryId: string) {

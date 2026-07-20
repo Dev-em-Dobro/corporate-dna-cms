@@ -11,12 +11,14 @@ import {
 import MediaPicker from "./MediaPicker";
 import RichTextEditor from "./RichTextEditor";
 import VersionHistory from "./VersionHistory";
+import LoadingOverlay from "./ui/LoadingOverlay";
 import { StatusBadge, StatusMessage } from "./ui/Feedback";
 import {
   buttonDark,
   buttonPrimary,
   buttonSecondary,
   input,
+  select,
   textarea,
 } from "./ui/styles";
 
@@ -35,6 +37,8 @@ export default function ContentEditor({
   initial,
   label,
   fixedSlug,
+  availableLocales,
+  defaultLocale,
 }: {
   apiType: string;
   collection: string;
@@ -44,6 +48,9 @@ export default function ContentEditor({
   label: string;
   /** Force a slug on create (used by singleton pages: book, 5h, privacy...). */
   fixedSlug?: string;
+  /** Active languages offered in the create-mode language picker. */
+  availableLocales?: { code: string; label: string }[];
+  defaultLocale?: string;
 }) {
   const router = useRouter();
   const formId = useId();
@@ -62,6 +69,8 @@ export default function ContentEditor({
   const [locked, setLocked] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(false);
+  // Language chosen for a brand-new entry (create mode only).
+  const [locale, setLocale] = useState(defaultLocale ?? "en");
   // Remount seed: bumped after a restore so uncontrolled editors (Quill)
   // re-initialise with the restored content.
   const [revision, setRevision] = useState(0);
@@ -193,6 +202,7 @@ export default function ContentEditor({
             headers: { "content-type": "application/json" },
             body: JSON.stringify({
               data: payload,
+              locale,
               ...(fixedSlug ? { slug: fixedSlug } : {}),
             }),
           });
@@ -416,6 +426,30 @@ export default function ContentEditor({
         )}
       </div>
 
+      {/* Create-mode language picker: choose the new entry's language. */}
+      {!id && availableLocales && availableLocales.length > 0 && (
+        <div className="mb-5 flex items-center gap-2">
+          <label
+            htmlFor={`${formId}-locale`}
+            className="text-sm font-medium text-ink"
+          >
+            Language
+          </label>
+          <select
+            id={`${formId}-locale`}
+            className={select}
+            value={locale}
+            onChange={(e) => setLocale(e.target.value)}
+          >
+            {availableLocales.map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Error summary: announced, focusable, and links to each bad field. */}
       {(fieldErrors.length > 0 || errors._) && (
         <div
@@ -557,6 +591,10 @@ export default function ContentEditor({
           }}
         />
       )}
+
+      {/* Lock the whole screen during an explicit save/publish/restore.
+          Auto-save is deliberately excluded (it must never interrupt typing). */}
+      <LoadingOverlay show={locked} message="Saving…" />
     </div>
   );
 

@@ -4,3 +4,4 @@ export * from "./content";
 export * from "./media";
 export * from "./audit";
 export * from "./webhooks";
+export * from "./locales";

@@ -2,8 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SEGMENT_TO_TYPE, defForType } from "@/lib/content/types";
 import { listEntries } from "@/lib/content/entries";
+import { activeLocales, getDefaultLocale } from "@/lib/content/locales";
+import { groupByTranslationGroup } from "@/lib/content/translations";
 import { StatusBadge } from "@/components/ui/Feedback";
 import { buttonPrimary } from "@/components/ui/styles";
+import AddTranslationButton from "@/components/AddTranslationButton";
 
 export default async function CollectionList({
   params,
@@ -14,7 +17,23 @@ export default async function CollectionList({
   const type = SEGMENT_TO_TYPE[collection];
   if (!type) notFound();
   const def = defForType(type);
-  const entries = await listEntries(type, { limit: 100 }).catch(() => []);
+  const [entries, active, defaultLocale] = await Promise.all([
+    listEntries(type, { limit: 100 }).catch(() => []),
+    activeLocales(),
+    getDefaultLocale(),
+  ]);
+  // Collapse locale variants of the same piece into one row (FR-010).
+  const groups = groupByTranslationGroup(
+    entries.map((e) => ({
+      id: e.id,
+      locale: e.locale,
+      status: e.status,
+      title: def.toListItem(e.data).title,
+      updatedAt: new Date(e.updatedAt).toISOString(),
+      translationGroupId: e.translationGroupId,
+    })),
+    defaultLocale,
+  );
 
   return (
     <div>
@@ -43,37 +62,59 @@ export default async function CollectionList({
         <div className="overflow-x-auto rounded-lg border border-line-strong">
           <table className="w-full min-w-[36rem] text-sm">
             <caption className="sr-only">
-              {def.label} entries with status, locale, and last update
+              {def.label} entries with their languages and last update
             </caption>
             <thead className="bg-paper text-left text-xs uppercase tracking-wide text-muted">
               <tr>
                 <th scope="col" className="px-4 py-2 font-semibold">Title</th>
-                <th scope="col" className="px-4 py-2 font-semibold">Status</th>
-                <th scope="col" className="px-4 py-2 font-semibold">Locale</th>
+                <th scope="col" className="px-4 py-2 font-semibold">Languages</th>
                 <th scope="col" className="px-4 py-2 font-semibold">Updated</th>
               </tr>
             </thead>
             <tbody>
-              {entries.map((e) => (
+              {groups.map((g) => (
                 <tr
-                  key={e.id}
+                  key={g.translationGroupId}
                   className="border-t border-line transition-colors duration-150 hover:bg-paper"
                 >
                   <th scope="row" className="px-4 py-2 text-left font-normal">
                     <Link
-                      href={`/${collection}/${e.id}`}
+                      href={`/${collection}/${g.primaryId}`}
                       className="font-medium text-ink underline decoration-line-strong underline-offset-2 transition-colors duration-150 hover:decoration-brand-dark"
                     >
-                      {def.toListItem(e.data).title}
+                      {g.title}
                     </Link>
                   </th>
                   <td className="px-4 py-2">
-                    <StatusBadge status={e.status} />
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      {active.map((l) => {
+                        const v = g.variants.find((x) => x.locale === l.code);
+                        return v ? (
+                          <Link
+                            key={l.code}
+                            href={`/${collection}/${v.id}`}
+                            title={`${l.label} — ${v.status}`}
+                            className="inline-flex items-center gap-1 rounded-full border border-line-strong px-2 py-0.5 text-xs text-ink transition-colors duration-150 hover:border-brand-dark"
+                          >
+                            <span className="uppercase">{l.code}</span>
+                            <StatusBadge status={v.status} />
+                          </Link>
+                        ) : (
+                          <AddTranslationButton
+                            key={l.code}
+                            apiType={collection}
+                            id={g.primaryId}
+                            code={l.code}
+                            label={l.label}
+                            collection={collection}
+                          />
+                        );
+                      })}
+                    </span>
                   </td>
-                  <td className="px-4 py-2 uppercase text-muted">{e.locale}</td>
                   <td className="px-4 py-2 text-muted">
-                    <time dateTime={new Date(e.updatedAt).toISOString()}>
-                      {new Date(e.updatedAt).toLocaleDateString()}
+                    <time dateTime={g.updatedAt}>
+                      {new Date(g.updatedAt).toLocaleDateString()}
                     </time>
                   </td>
                 </tr>

@@ -11,6 +11,7 @@ const NAV: (NavItem & { adminOnly?: boolean })[] = [
   { href: "/insights", label: "Insights" },
   { href: "/pages", label: "Pages" },
   { href: "/media", label: "Media" },
+  { href: "/settings/languages", label: "Languages", adminOnly: true },
   { href: "/users", label: "Users & audit", adminOnly: true },
 ];
 
