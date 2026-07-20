@@ -305,8 +305,17 @@ export default function ContentEditor({
         method: "POST",
       });
       const body = await res.json();
-      if (res.status === 422)
-        return setErrors(body.fields ?? { _: body.error ?? "Validation failed" });
+      if (res.status === 422) {
+        // Publish gate failed (missing required field or a deleted media
+        // reference). Some errors are keyed by media id, not field name, so
+        // they never reach the field-error summary — always surface a message.
+        const fields = (body.fields ?? {}) as Record<string, string>;
+        setErrors(fields);
+        const detail =
+          Object.values(fields).join("; ") || body.error || "Validation failed";
+        setMessage({ tone: "error", text: `Can't ${action}: ${detail}` });
+        return;
+      }
       if (!res.ok)
         return setMessage({ tone: "error", text: body.error ?? "Action failed" });
       setStatus(body.status);
