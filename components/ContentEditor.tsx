@@ -295,9 +295,22 @@ export default function ContentEditor({
   }
 
   async function doAction(action: "publish" | "unpublish") {
-    if (!id) return;
-    setBusy(true);
+    if (!id || savingRef.current) return;
+    autosaveRef.current?.cancel();
     setLocked(true);
+    // Publish validates the persisted entry, so flush unsaved edits first —
+    // otherwise a just-picked image or edited field wouldn't be seen by the
+    // publish gate (e.g. a new cover would still look "not found").
+    if (action === "publish" && dirty) {
+      const r = await saveDraft({ silent: true });
+      if (!r.ok) {
+        setLocked(false);
+        return; // save error already surfaced; keep on-screen work
+      }
+    }
+
+    savingRef.current = true;
+    setBusy(true);
     setMessage(null);
     setErrors({});
     try {
@@ -348,6 +361,7 @@ export default function ContentEditor({
     } catch {
       setMessage({ tone: "error", text: "Could not reach the server. Retry." });
     } finally {
+      savingRef.current = false;
       setBusy(false);
       setLocked(false);
     }
