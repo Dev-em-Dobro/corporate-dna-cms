@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Modal from "./ui/Modal";
 import { Skeleton, StatusMessage } from "./ui/Feedback";
+import LoadingOverlay from "./ui/LoadingOverlay";
 import { buttonPrimary, buttonQuiet, buttonSecondary } from "./ui/styles";
 import { ACCEPT_ATTR } from "@/lib/media/validate";
 
@@ -217,6 +218,7 @@ export default function MediaPicker({
           </ul>
         )}
       </Modal>
+      <LoadingOverlay show={busy} message="Uploading…" />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { StatusMessage, Skeleton } from "./ui/Feedback";
 import { useConfirm } from "./ui/useConfirm";
+import LoadingOverlay from "./ui/LoadingOverlay";
 import {
   buttonPrimary,
   buttonSecondary,
@@ -42,6 +43,7 @@ export default function UsersManager() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const [working, setWorking] = useState(false); // a row action in flight
   const [confirm, confirmDialog] = useConfirm();
 
   /**
@@ -111,6 +113,7 @@ export default function UsersManager() {
     if (!ok) return;
     setError("");
     setNotice("");
+    setWorking(true);
     try {
       const res = await fetch(`/api/admin/users/${user.id}`, {
         method: "POST",
@@ -123,12 +126,15 @@ export default function UsersManager() {
       load();
     } catch {
       setError("Could not reach the server.");
+    } finally {
+      setWorking(false);
     }
   }
 
   async function patch(id: string, body: Record<string, string>) {
     setError("");
     setNotice("");
+    setWorking(true);
     try {
       const res = await fetch(`/api/admin/users/${id}`, {
         method: "PUT",
@@ -140,6 +146,8 @@ export default function UsersManager() {
       load();
     } catch {
       setError("Could not reach the server.");
+    } finally {
+      setWorking(false);
     }
   }
 
@@ -367,6 +375,7 @@ export default function UsersManager() {
       )}
 
       {confirmDialog}
+      <LoadingOverlay show={busy || working} message="Saving…" />
     </div>
   );
 }

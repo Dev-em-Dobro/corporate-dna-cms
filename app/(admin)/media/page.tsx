@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { StatusMessage, Skeleton } from "@/components/ui/Feedback";
 import { useConfirm } from "@/components/ui/useConfirm";
+import LoadingOverlay from "@/components/ui/LoadingOverlay";
 import { buttonPrimary, buttonDanger } from "@/components/ui/styles";
 import { ACCEPT_ATTR } from "@/lib/media/validate";
 
@@ -187,6 +188,10 @@ export default function MediaLibrary() {
       )}
 
       {confirmDialog}
+      <LoadingOverlay
+        show={busy || deletingId !== null}
+        message={busy ? "Uploading…" : "Deleting…"}
+      />
     </div>
   );
 }
