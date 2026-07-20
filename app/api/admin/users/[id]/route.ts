@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/auth/guards";
 import { updateUser, resetMfa } from "@/lib/users/service";
 import { writeAudit } from "@/lib/audit/log";
-import { jsonOk, jsonError, handleError } from "@/lib/http";
+import { jsonOk, jsonError, clientMeta, handleError } from "@/lib/http";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -63,6 +63,15 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       action: "user.mfa_reset",
       targetType: "user",
       targetId: id,
+    });
+    // Resetting the factor signs the user out of every active session.
+    await writeAudit({
+      actorId: admin.sub,
+      actorEmail: admin.email,
+      action: "auth.session_revoked",
+      targetType: "user",
+      targetId: id,
+      metadata: { reason: "mfa_reset", ...clientMeta(req) },
     });
     return jsonOk({ ok: true });
   } catch (e) {

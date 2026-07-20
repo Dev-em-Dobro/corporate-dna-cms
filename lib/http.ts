@@ -34,6 +34,14 @@ export function handleError(e: unknown): NextResponse {
   return jsonError(500, "Internal error");
 }
 
+/** Client origin (IP + user-agent) for security audit events. */
+export function clientMeta(req: Request): { ip: string; userAgent: string } {
+  return {
+    ip: (req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim(),
+    userAgent: req.headers.get("user-agent") ?? "unknown",
+  };
+}
+
 /**
  * Validate the read API key. If READ_API_KEY is unset the read API is treated as
  * public (still published-only). If set, callers must send a matching x-api-key.

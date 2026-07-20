@@ -2,7 +2,13 @@ import { NextRequest } from "next/server";
 import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { writeAudit } from "@/lib/audit/log";
-import { jsonOk, jsonError, checkRateLimit, handleError } from "@/lib/http";
+import {
+  jsonOk,
+  jsonError,
+  checkRateLimit,
+  clientMeta,
+  handleError,
+} from "@/lib/http";
 
 /**
  * Request a password-recovery email.
@@ -24,6 +30,7 @@ export async function POST(req: NextRequest) {
 
     if (email && email.includes("@")) {
       const origin = new URL(req.url).origin;
+      const meta = clientMeta(req);
       const supabase = await createClient();
       const send = async () => {
         // Errors (unknown address, SMTP limits) are swallowed on purpose —
@@ -35,7 +42,7 @@ export async function POST(req: NextRequest) {
           .catch(() => {});
         await writeAudit({
           action: "auth.password_reset_requested",
-          metadata: { email },
+          metadata: { email, ...meta },
         }).catch(() => {});
       };
       try {

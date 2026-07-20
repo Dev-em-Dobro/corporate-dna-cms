@@ -4,7 +4,13 @@ import { db } from "@/db";
 import { profiles } from "@/db/schema";
 import { createClient } from "@/lib/supabase/server";
 import { writeAudit } from "@/lib/audit/log";
-import { jsonError, jsonOk, checkRateLimit, handleError } from "@/lib/http";
+import {
+  jsonError,
+  jsonOk,
+  checkRateLimit,
+  clientMeta,
+  handleError,
+} from "@/lib/http";
 
 /**
  * Step one of sign-in: password only. Establishes an aal1 session.
@@ -26,6 +32,10 @@ export async function POST(req: NextRequest) {
 
     const ip = req.headers.get("x-forwarded-for") ?? "unknown";
     if (!checkRateLimit(`login:${ip}:${email}`, 10, 60_000)) {
+      await writeAudit({
+        action: "auth.login_rate_limited",
+        metadata: { email, ...clientMeta(req) },
+      });
       return jsonError(429, "Too many attempts, try again later");
     }
 
@@ -38,7 +48,7 @@ export async function POST(req: NextRequest) {
     if (error || !data.user) {
       await writeAudit({
         action: "auth.login_fail",
-        metadata: { email, reason: "bad-credentials" },
+        metadata: { email, reason: "bad-credentials", ...clientMeta(req) },
       });
       return jsonError(401, "Invalid credentials");
     }
@@ -56,7 +66,7 @@ export async function POST(req: NextRequest) {
         actorId: profile?.id,
         actorEmail: profile?.email,
         action: "auth.login_fail",
-        metadata: { reason: "disabled-or-missing-profile" },
+        metadata: { reason: "disabled-or-missing-profile", ...clientMeta(req) },
       });
       return jsonError(401, "Invalid credentials");
     }
@@ -71,6 +81,7 @@ export async function POST(req: NextRequest) {
         actorId: profile.id,
         actorEmail: profile.email,
         action: "auth.bootstrap_enter",
+        metadata: clientMeta(req),
       });
       return jsonOk({ ok: true, next: "enrol" });
     }

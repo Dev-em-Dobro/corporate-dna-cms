@@ -5,7 +5,7 @@ import { profiles } from "@/db/schema";
 import { createClient } from "@/lib/supabase/server";
 import { requireEnrolmentBootstrap } from "@/lib/auth/guards";
 import { writeAudit } from "@/lib/audit/log";
-import { jsonError, jsonOk, handleError } from "@/lib/http";
+import { jsonError, jsonOk, clientMeta, handleError } from "@/lib/http";
 
 /**
  * Confirm enrolment by verifying a code from the authenticator app. On success
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
         actorId: session.sub,
         actorEmail: session.email,
         action: "auth.mfa_fail",
-        metadata: { during: "enrolment" },
+        metadata: { during: "enrolment", ...clientMeta(req) },
       });
       if (error.status === 429) {
         return jsonError(
@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
       actorId: session.sub,
       actorEmail: session.email,
       action: "auth.mfa_enrolled",
+      metadata: clientMeta(req),
     });
     await writeAudit({
       actorId: session.sub,

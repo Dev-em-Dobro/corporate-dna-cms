@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { profiles } from "@/db/schema";
 import { createClient } from "@/lib/supabase/server";
 import { writeAudit } from "@/lib/audit/log";
-import { jsonError, jsonOk, handleError } from "@/lib/http";
+import { jsonError, jsonOk, clientMeta, handleError } from "@/lib/http";
 
 /**
  * Step two of sign-in: satisfy the second factor, elevating the session to
@@ -32,7 +32,11 @@ export async function POST(req: NextRequest) {
     });
 
     if (error) {
-      await writeAudit({ actorId: sub, action: "auth.mfa_fail" });
+      await writeAudit({
+        actorId: sub,
+        action: "auth.mfa_fail",
+        metadata: clientMeta(req),
+      });
       /**
        * Supabase rate-limits challenge/verify to 15 per hour PER IP ADDRESS —
        * not per user, and not configurable. Everyone behind the same office
@@ -58,7 +62,7 @@ export async function POST(req: NextRequest) {
       actorId: sub,
       actorEmail: profile?.email,
       action: "auth.login",
-      metadata: { mfa: true },
+      metadata: { mfa: true, ...clientMeta(req) },
     });
     return jsonOk({ ok: true });
   } catch (e) {

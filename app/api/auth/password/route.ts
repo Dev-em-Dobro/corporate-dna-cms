@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { writeAudit } from "@/lib/audit/log";
-import { jsonOk, jsonError, handleError } from "@/lib/http";
+import { jsonOk, jsonError, clientMeta, handleError } from "@/lib/http";
 
 /**
  * Set a new password for the signed-in user — the landing action for both the
@@ -45,10 +45,19 @@ export async function POST(req: NextRequest) {
       return jsonError(400, error.message);
     }
 
+    const actorEmail = typeof claims.email === "string" ? claims.email : null;
     await writeAudit({
       actorId: claims.sub,
-      actorEmail: typeof claims.email === "string" ? claims.email : null,
+      actorEmail,
       action: "auth.password_changed",
+      metadata: clientMeta(req),
+    });
+    // Changing the password revokes the account's other sessions (Supabase).
+    await writeAudit({
+      actorId: claims.sub,
+      actorEmail,
+      action: "auth.session_revoked",
+      metadata: { reason: "password_changed", ...clientMeta(req) },
     });
 
     return jsonOk({ ok: true });
