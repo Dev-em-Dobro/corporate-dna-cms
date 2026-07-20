@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { StatusMessage, Skeleton } from "@/components/ui/Feedback";
 import { useConfirm } from "@/components/ui/useConfirm";
 import { buttonPrimary, buttonDanger } from "@/components/ui/styles";
+import { ACCEPT_ATTR } from "@/lib/media/validate";
 
 interface MediaItem {
   id: string;
@@ -23,6 +24,7 @@ export default function MediaLibrary() {
   const [items, setItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [confirm, confirmDialog] = useConfirm();
@@ -74,6 +76,7 @@ export default function MediaLibrary() {
 
     setError("");
     setNotice("");
+    setDeletingId(item.id);
     try {
       const res = await fetch(`/api/media/${item.id}`, { method: "DELETE" });
       if (!res.ok) {
@@ -85,6 +88,8 @@ export default function MediaLibrary() {
       load();
     } catch {
       setError("Delete failed — could not reach the server.");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -96,6 +101,7 @@ export default function MediaLibrary() {
           {busy ? "Uploading…" : "Upload"}
           <input
             type="file"
+            accept={ACCEPT_ATTR}
             className="sr-only"
             onChange={upload}
             disabled={busy}
@@ -128,31 +134,50 @@ export default function MediaLibrary() {
           {items.map((m) => (
             <li
               key={m.id}
-              className="flex flex-col overflow-hidden rounded border border-line-strong"
+              aria-busy={deletingId === m.id}
+              className={`flex flex-col overflow-hidden rounded border border-line-strong transition-opacity duration-150 ${
+                deletingId === m.id ? "pointer-events-none opacity-50" : ""
+              }`}
             >
-              {m.mimeType.startsWith("image/") ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={m.deliveryUrl}
-                  alt=""
-                  loading="lazy"
-                  className="h-24 w-full object-cover"
-                />
-              ) : (
-                <span className="grid h-24 w-full place-items-center bg-paper text-xs text-muted">
-                  file
-                </span>
-              )}
+              <a
+                href={m.deliveryUrl}
+                target="_blank"
+                rel="noreferrer"
+                title={`Open ${m.filename}`}
+                className="block transition-opacity duration-150 hover:opacity-90"
+              >
+                {m.mimeType.startsWith("image/") ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={m.deliveryUrl}
+                    alt=""
+                    loading="lazy"
+                    className="h-24 w-full object-cover"
+                  />
+                ) : (
+                  <span className="grid h-24 w-full place-items-center bg-paper text-xs text-muted">
+                    file
+                  </span>
+                )}
+              </a>
               <div className="flex flex-1 flex-col gap-1 p-2">
-                <span className="truncate text-xs font-medium text-ink" title={m.filename}>
+                <a
+                  href={m.deliveryUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="truncate text-xs font-medium text-ink hover:text-brand-dark hover:underline"
+                  title={`Open ${m.filename}`}
+                >
                   {m.filename}
-                </span>
+                </a>
                 <span className="text-xs text-muted">{formatSize(m.sizeBytes)}</span>
                 <button
                   onClick={() => remove(m)}
-                  className={`${buttonDanger} mt-auto self-start`}
+                  disabled={deletingId === m.id}
+                  aria-busy={deletingId === m.id}
+                  className={`${buttonDanger} mt-auto self-start disabled:opacity-60`}
                 >
-                  Delete
+                  {deletingId === m.id ? "Deleting…" : "Delete"}
                   <span className="sr-only"> {m.filename}</span>
                 </button>
               </div>

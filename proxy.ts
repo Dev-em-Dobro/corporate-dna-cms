@@ -14,6 +14,9 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Skip the media upload route: the proxy buffers request bodies and would
+    // truncate uploads at 10MB, breaking multipart parsing. It only refreshes
+    // the session cookie, which the upload handler doesn't need.
+    "/((?!_next/static|_next/image|favicon.ico|api/media|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

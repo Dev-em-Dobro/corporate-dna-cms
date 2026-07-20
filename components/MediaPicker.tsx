@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Modal from "./ui/Modal";
 import { Skeleton, StatusMessage } from "./ui/Feedback";
 import { buttonPrimary, buttonQuiet, buttonSecondary } from "./ui/styles";
+import { ACCEPT_ATTR } from "@/lib/media/validate";
 
 interface MediaItem {
   id: string;
@@ -141,6 +142,7 @@ export default function MediaPicker({
             {busy ? "Uploading…" : "Upload"}
             <input
               type="file"
+              accept={ACCEPT_ATTR}
               className="sr-only"
               onChange={upload}
               disabled={busy}

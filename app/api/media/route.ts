@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { mediaAssets } from "@/db/schema";
 import { requireSession } from "@/lib/auth/guards";
 import { validateUpload } from "@/lib/media/validate";
+import { processImage } from "@/lib/media/image";
 import { uploadToBunny } from "@/lib/media/bunny";
 import { writeAudit } from "@/lib/audit/log";
 import { jsonOk, jsonError, jsonValidationError, handleError } from "@/lib/http";
@@ -41,23 +42,30 @@ export async function POST(req: NextRequest) {
     if (!check.ok) return jsonValidationError({ file: check.error });
 
     const altText = (form.get("altText") as string | null) ?? null;
-    const ext = file.name.includes(".") ? file.name.split(".").pop() : "bin";
+    const originalExt = file.name.includes(".")
+      ? file.name.split(".").pop()!
+      : "bin";
     const base = slugify(file.name.replace(/\.[^.]+$/, "")) || "file";
-    const path = `uploads/${randomUUID()}-${base}.${ext}`;
 
-    const bytes = new Uint8Array(await file.arrayBuffer());
+    // Images are recompressed to WebP; other files pass through untouched.
+    const rawBytes = new Uint8Array(await file.arrayBuffer());
+    const processed = await processImage(rawBytes, file.type, originalExt);
+
+    const path = `uploads/${randomUUID()}-${base}.${processed.ext}`;
     const { deliveryUrl, bunnyPath } = await uploadToBunny(
       path,
-      bytes,
-      file.type,
+      processed.bytes,
+      processed.mimeType,
     );
 
     const [asset] = await db
       .insert(mediaAssets)
       .values({
         filename: file.name,
-        mimeType: file.type,
-        sizeBytes: file.size,
+        mimeType: processed.mimeType,
+        sizeBytes: processed.bytes.byteLength,
+        width: processed.width,
+        height: processed.height,
         bunnyPath,
         deliveryUrl,
         altText,
