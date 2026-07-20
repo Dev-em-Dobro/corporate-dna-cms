@@ -28,12 +28,15 @@ interface AuditRow {
   targetType: string | null;
   targetId: string | null;
   actorId: string | null;
+  actorEmail: string | null;
+  metadata: Record<string, unknown> | null;
   createdAt: string;
 }
 
 export default function UsersManager() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [audit, setAudit] = useState<AuditRow[]>([]);
+  const [expandedAudit, setExpandedAudit] = useState<string | null>(null);
   const [auditPage, setAuditPage] = useState(0);
   const [auditHasMore, setAuditHasMore] = useState(false);
   const [auditLoading, setAuditLoading] = useState(false);
@@ -328,20 +331,67 @@ export default function UsersManager() {
         </p>
       ) : (
         <ul className="flex flex-col divide-y divide-line text-sm" aria-live="polite">
-          {audit.map((a) => (
-            <li key={a.id} className="flex flex-wrap gap-x-3 gap-y-0.5 py-2">
-              <time
-                dateTime={a.createdAt}
-                className="w-40 shrink-0 text-xs text-muted"
-              >
-                {new Date(a.createdAt).toLocaleString()}
-              </time>
-              <span className="font-medium text-ink">{a.action}</span>
-              <span className="text-muted">
-                {a.targetType} {a.targetId?.slice(0, 8)}
-              </span>
-            </li>
-          ))}
+          {audit.map((a) => {
+            const open = expandedAudit === a.id;
+            return (
+              <li key={a.id} className="py-2">
+                <button
+                  type="button"
+                  aria-expanded={open}
+                  onClick={() => setExpandedAudit(open ? null : a.id)}
+                  className="flex w-full flex-wrap items-center gap-x-3 gap-y-0.5 text-left transition-colors duration-150 hover:text-ink"
+                >
+                  <time
+                    dateTime={a.createdAt}
+                    className="w-40 shrink-0 text-xs text-muted"
+                  >
+                    {new Date(a.createdAt).toLocaleString()}
+                  </time>
+                  <span className="font-medium text-ink">{a.action}</span>
+                  <span className="text-muted">
+                    {a.targetType} {a.targetId?.slice(0, 8)}
+                  </span>
+                  <span className="ml-auto text-xs text-muted">
+                    by {a.actorEmail ?? "system"}
+                  </span>
+                  <span aria-hidden="true" className="text-xs text-muted">
+                    {open ? "▲" : "▼"}
+                  </span>
+                </button>
+
+                {open && (
+                  <dl className="mt-2 grid grid-cols-[6rem_1fr] gap-x-4 gap-y-1 rounded border border-line-strong bg-paper p-3 text-xs">
+                    <dt className="text-muted">When</dt>
+                    <dd className="text-ink">
+                      {new Date(a.createdAt).toLocaleString()}
+                    </dd>
+                    <dt className="text-muted">Action</dt>
+                    <dd className="font-medium text-ink">{a.action}</dd>
+                    <dt className="text-muted">Actor</dt>
+                    <dd className="break-all text-ink">
+                      {a.actorEmail ?? "system"}
+                      {a.actorId ? ` · ${a.actorId}` : ""}
+                    </dd>
+                    <dt className="text-muted">Target</dt>
+                    <dd className="break-all text-ink">
+                      {a.targetType ?? "—"}
+                      {a.targetId ? ` · ${a.targetId}` : ""}
+                    </dd>
+                    <dt className="text-muted">Details</dt>
+                    <dd className="text-ink">
+                      {a.metadata && Object.keys(a.metadata).length > 0 ? (
+                        <pre className="whitespace-pre-wrap break-all font-mono text-xs">
+                          {JSON.stringify(a.metadata, null, 2)}
+                        </pre>
+                      ) : (
+                        "—"
+                      )}
+                    </dd>
+                  </dl>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
 

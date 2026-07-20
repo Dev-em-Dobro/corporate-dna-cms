@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { auditLog } from "@/db/schema";
-import { desc, eq, and, SQL } from "drizzle-orm";
+import { auditLog, profiles } from "@/db/schema";
+import { desc, eq, and, sql, SQL } from "drizzle-orm";
 
 export interface AuditInput {
   actorId?: string | null;
@@ -45,8 +45,22 @@ export async function listAudit(q: AuditQuery = {}) {
   if (q.action) conds.push(eq(auditLog.action, q.action));
   if (q.targetType) conds.push(eq(auditLog.targetType, q.targetType));
   return db
-    .select()
+    .select({
+      id: auditLog.id,
+      action: auditLog.action,
+      targetType: auditLog.targetType,
+      targetId: auditLog.targetId,
+      actorId: auditLog.actorId,
+      // Prefer the actor's current email; fall back to the snapshot taken at
+      // write time (which survives the user being deleted).
+      actorEmail: sql<
+        string | null
+      >`coalesce(${auditLog.actorEmail}, ${profiles.email})`,
+      metadata: auditLog.metadata,
+      createdAt: auditLog.createdAt,
+    })
     .from(auditLog)
+    .leftJoin(profiles, eq(profiles.id, auditLog.actorId))
     .where(conds.length ? and(...conds) : undefined)
     .orderBy(desc(auditLog.createdAt))
     .limit(Math.min(q.limit ?? 100, 500))
