@@ -2,6 +2,12 @@ import { and, arrayOverlaps, desc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { contentEntries, caseStudyFacets } from "@/db/schema";
 import { defForType, type ContentType } from "./types";
+import {
+  attachDataMediaUrls,
+  attachListItemMediaUrl,
+  collectDataMediaIds,
+  resolveMediaUrls,
+} from "./media-urls";
 
 const DEFAULT_LOCALE = "en";
 
@@ -49,7 +55,13 @@ export async function listPublished(type: ContentType, params: ListParams = {}) 
     .select({ total: sql<number>`count(*)::int` })
     .from(contentEntries)
     .where(and(...conds));
-  return { items: rows.map((e) => toListItem(type, e)), page, pageSize, total };
+
+  const baseItems = rows.map((e) => toListItem(type, e));
+  const urls = await resolveMediaUrls(
+    baseItems.map((i) => i.coverMediaId).filter((v): v is string => !!v),
+  );
+  const items = baseItems.map((i) => attachListItemMediaUrl(i, urls));
+  return { items, page, pageSize, total };
 }
 
 export interface CaseFilter extends ListParams {
@@ -102,7 +114,7 @@ export async function listPublishedCases(params: CaseFilter = {}) {
     .innerJoin(caseStudyFacets, eq(caseStudyFacets.entryId, contentEntries.id))
     .where(and(...conds));
 
-  const items = rows.map((r) => ({
+  const baseItems = rows.map((r) => ({
     ...toListItem("case", r.entry),
     facets: {
       industry: r.facets.industry,
@@ -111,6 +123,10 @@ export async function listPublishedCases(params: CaseFilter = {}) {
       outcome: r.facets.outcome,
     },
   }));
+  const urls = await resolveMediaUrls(
+    baseItems.map((i) => i.coverMediaId).filter((v): v is string => !!v),
+  );
+  const items = baseItems.map((i) => attachListItemMediaUrl(i, urls));
   return { items, page, pageSize, total };
 }
 
@@ -158,12 +174,15 @@ export async function getPublished(
       };
   }
 
+  const urls = await resolveMediaUrls(collectDataMediaIds(entry.data));
+  const withUrls = attachDataMediaUrls(entry.data, urls);
+
   return {
     id: entry.id,
     type: entry.type,
     slug: entry.slug,
     locale: entry.locale,
-    data: facets ? { ...entry.data, facets } : entry.data,
+    data: facets ? { ...withUrls, facets } : withUrls,
     publishedAt: entry.publishedAt,
   };
 }
