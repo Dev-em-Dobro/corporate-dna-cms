@@ -34,6 +34,42 @@ function toListItem(type: ContentType, e: typeof contentEntries.$inferSelect) {
   };
 }
 
+/**
+ * Serialise a single entry into the read-API detail shape: resolve media refs
+ * to URLs and attach case facets. Shared by the published detail endpoint and
+ * the token-gated draft preview endpoint so both return an identical shape.
+ */
+export async function serializeEntry(
+  entry: typeof contentEntries.$inferSelect,
+): Promise<Record<string, unknown>> {
+  let facets: Record<string, string[]> | undefined;
+  if (entry.type === "case") {
+    const [f] = await db
+      .select()
+      .from(caseStudyFacets)
+      .where(eq(caseStudyFacets.entryId, entry.id));
+    if (f)
+      facets = {
+        industry: f.industry,
+        service: f.service,
+        region: f.regionSlugs,
+        outcome: f.outcome,
+      };
+  }
+
+  const urls = await resolveMediaUrls(collectDataMediaIds(entry.data));
+  const withUrls = attachDataMediaUrls(entry.data, urls);
+
+  return {
+    id: entry.id,
+    type: entry.type,
+    slug: entry.slug,
+    locale: entry.locale,
+    data: facets ? { ...withUrls, facets } : withUrls,
+    publishedAt: entry.publishedAt,
+  };
+}
+
 /** Published-only list for a collection type (draft/deleted never returned). */
 export async function listPublished(type: ContentType, params: ListParams = {}) {
   const locale = params.locale ?? DEFAULT_LOCALE;
@@ -159,30 +195,5 @@ export async function getPublished(
   if (!entry && locale !== DEFAULT_LOCALE) entry = await fetchOne(DEFAULT_LOCALE);
   if (!entry) return null;
 
-  let facets: Record<string, string[]> | undefined;
-  if (type === "case") {
-    const [f] = await db
-      .select()
-      .from(caseStudyFacets)
-      .where(eq(caseStudyFacets.entryId, entry.id));
-    if (f)
-      facets = {
-        industry: f.industry,
-        service: f.service,
-        region: f.regionSlugs,
-        outcome: f.outcome,
-      };
-  }
-
-  const urls = await resolveMediaUrls(collectDataMediaIds(entry.data));
-  const withUrls = attachDataMediaUrls(entry.data, urls);
-
-  return {
-    id: entry.id,
-    type: entry.type,
-    slug: entry.slug,
-    locale: entry.locale,
-    data: facets ? { ...withUrls, facets } : withUrls,
-    publishedAt: entry.publishedAt,
-  };
+  return serializeEntry(entry);
 }
