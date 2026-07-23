@@ -35,6 +35,29 @@ describe("rich-text sanitisation", () => {
     const out = sanitizeRichHtml('<a href="javascript:alert(1)">x</a>');
     expect(out).not.toContain("javascript:");
   });
+
+  it("keeps inline images with an http(s) src and alt", () => {
+    const out = sanitizeRichHtml(
+      '<p><img src="https://cdn.example.net/a.webp" alt="a"></p>',
+    );
+    expect(out).toContain('src="https://cdn.example.net/a.webp"');
+    expect(out).toContain('alt="a"');
+  });
+
+  it("drops base64 (data:) image sources", () => {
+    const out = sanitizeRichHtml(
+      '<img src="data:image/png;base64,AAAA" alt="x">',
+    );
+    expect(out).not.toContain("data:");
+    expect(out).not.toContain("base64");
+  });
+
+  it("strips event handlers off images", () => {
+    const out = sanitizeRichHtml(
+      '<img src="https://cdn.example.net/a.webp" onerror="steal()">',
+    );
+    expect(out).not.toContain("onerror");
+  });
 });
 
 describe("richTextFields", () => {

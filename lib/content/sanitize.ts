@@ -8,7 +8,13 @@ import type { ContentType } from "./types";
  * it is persisted — no unsanitised markup ever reaches the database.
  *
  * The allowlist mirrors the editor toolbar (headings, emphasis, lists, quote,
- * link); anything else — scripts, event handlers, styles, iframes — is dropped.
+ * link, inline image); anything else — scripts, event handlers, styles,
+ * iframes — is dropped.
+ *
+ * Inline images carry only an `src`/`alt`. The src must be http(s): the editor
+ * uploads picked images through the media pipeline and inserts the resulting
+ * CDN URL, so `data:` (base64) sources are intentionally rejected — they would
+ * bloat the row and bypass Bunny.
  */
 const OPTIONS: sanitizeHtml.IOptions = {
   allowedTags: [
@@ -25,9 +31,11 @@ const OPTIONS: sanitizeHtml.IOptions = {
     "li",
     "a",
     "blockquote",
+    "img",
   ],
-  allowedAttributes: { a: ["href", "rel"] },
+  allowedAttributes: { a: ["href", "rel"], img: ["src", "alt"] },
   allowedSchemes: ["http", "https", "mailto"],
+  allowedSchemesByTag: { img: ["http", "https"] },
   allowProtocolRelative: false,
   transformTags: {
     // Force safe rel on every link regardless of what the editor emitted.

@@ -1,17 +1,30 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import "quill/dist/quill.snow.css";
 
-// Standard toolbar (no inline images — those stay on the cover Media field).
+// Standard toolbar. Inline images upload through the media pipeline (Bunny) and
+// are inserted as CDN URLs — never base64 (the sanitiser drops `data:` sources).
 const TOOLBAR = [
   [{ header: [2, 3, false] }],
   ["bold", "italic", "underline"],
   [{ list: "ordered" }, { list: "bullet" }],
   ["blockquote"],
-  ["link"],
+  ["link", "image"],
   ["clean"],
 ];
+
+/** Upload one image through POST /api/media and return its delivery URL. */
+async function uploadImage(file: File): Promise<string> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch("/api/media", { method: "POST", body: form });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(body.fields?.file ?? body.error ?? "Upload failed");
+  }
+  return body.deliveryUrl as string;
+}
 
 /**
  * Vanilla Quill 2 wrapped for React. Quill is loaded dynamically inside the
@@ -41,6 +54,8 @@ export default function RichTextEditor({
   const quillRef = useRef<import("quill").default | null>(null);
   // While true, programmatic content changes must not fire onChange.
   const seedingRef = useRef(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   // Latest props kept in refs so the mount effect never needs to re-run.
   const onChangeRef = useRef(onChange);
   const valueRef = useRef(value);
@@ -71,6 +86,38 @@ export default function RichTextEditor({
       });
       quillRef.current = quill;
 
+      // Replace Quill's default image handler (which base64-embeds the file)
+      // with one that uploads to the media pipeline and inserts the CDN URL.
+      const toolbar = quill.getModule("toolbar") as {
+        addHandler: (name: string, handler: () => void) => void;
+      };
+      toolbar.addHandler("image", () => {
+        if (disabledRef.current) return;
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+        input.onchange = async () => {
+          const file = input.files?.[0];
+          if (!file) return;
+          setUploading(true);
+          setUploadError("");
+          try {
+            const url = await uploadImage(file);
+            const range = quill.getSelection(true);
+            const index = range ? range.index : quill.getLength();
+            quill.insertEmbed(index, "image", url, "user");
+            quill.setSelection(index + 1, 0);
+          } catch (err) {
+            setUploadError(
+              err instanceof Error ? err.message : "Image upload failed",
+            );
+          } finally {
+            setUploading(false);
+          }
+        };
+        input.click();
+      });
+
       // Seed existing content (may be legacy plain text or HTML) BEFORE the
       // change listener, so seeding doesn't mark the form dirty.
       if (valueRef.current) {
@@ -84,8 +131,13 @@ export default function RichTextEditor({
       quill.on("text-change", () => {
         if (seedingRef.current) return; // ignore programmatic re-seeds
         // Treat Quill's empty document ("<p><br></p>") as "" so required
-        // validation and the unsaved-changes flag match the old textarea.
-        const html = quill.getText().trim() === "" ? "" : quill.root.innerHTML;
+        // validation and the unsaved-changes flag match the old textarea. An
+        // image-only document has no text but is NOT empty — keep its markup.
+        const hasEmbed = quill.root.querySelector("img") !== null;
+        const html =
+          quill.getText().trim() === "" && !hasEmbed
+            ? ""
+            : quill.root.innerHTML;
         onChangeRef.current(html);
       });
     })();
@@ -130,6 +182,16 @@ export default function RichTextEditor({
       } ${disabled ? "opacity-60" : ""}`}
     >
       <div ref={containerRef} />
+      {uploading && (
+        <p role="status" aria-live="polite" className="mt-1 text-sm text-muted">
+          Uploading image…
+        </p>
+      )}
+      {uploadError && (
+        <p role="alert" className="mt-1 text-sm text-danger">
+          {uploadError}
+        </p>
+      )}
     </div>
   );
 }
