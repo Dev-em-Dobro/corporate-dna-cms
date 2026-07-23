@@ -11,6 +11,10 @@
  * what requireEnrolmentBootstrap exists to permit — this script is the reason
  * that guard has to exist at all.
  */
+// `export {}` marks this file as a module so its top-level `main` doesn't share
+// global scope with the other one-off scripts (tsc flags duplicates otherwise).
+export {};
+
 // Load .env.local before anything else (this standalone script isn't run by
 // Next). Static imports are hoisted, so ../db must be imported dynamically
 // inside main() — otherwise it initialises before DATABASE_URL is set.
