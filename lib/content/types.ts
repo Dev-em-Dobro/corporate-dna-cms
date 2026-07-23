@@ -15,13 +15,6 @@ export const CONTENT_TYPES = [
 
 export type ContentType = (typeof CONTENT_TYPES)[number];
 
-/** A YouTube URL (used for case-study video references — FR-012). */
-const youtubeUrl = z
-  .url()
-  .refine((u) => /(?:youtube\.com|youtu\.be)/i.test(u), {
-    message: "Must be a YouTube URL",
-  });
-
 /**
  * Optional social/contact fields. The admin form sends "" for a blank input, so
  * treat empty as "not provided" before format-checking — a blank field must
@@ -42,27 +35,18 @@ const optionalEmail = z.preprocess(
 // ---------------------------------------------------------------------------
 
 export const caseSchema = z.object({
+  tags: z.array(z.string()).default([]),
   title: z.string().min(1),
-  summary: z.string().default(""),
-  challenge: z.string().min(1),
-  approach: z.string().min(1),
-  outcome: z.string().min(1),
-  measurableResult: z.string().min(1),
-  clientQuote: z.string().min(1),
-  coverMediaId: z.uuid().optional(),
-  videoUrl: youtubeUrl.optional(),
-  facets: z
-    .object({
-      industry: z.array(z.string()).default([]),
-      service: z.array(z.string()).default([]),
-      region: z.array(z.string()).default([]), // region slugs
-      outcome: z.array(z.string()).default([]),
-    })
-    .default({ industry: [], service: [], region: [], outcome: [] }),
+  quote: z.string().default(""),
+  quoter: z.string().default(""),
+  mutedVideoUrl: optionalUrl,
+  introduction: z.string().default(""),
+  text: z.string().default(""),
 });
 
 export const solutionSchema = z.object({
   title: z.string().min(1),
+  bannerMediaId: z.uuid().optional(),
   problemStatement: z.string().min(1),
   body: z.string().default(""),
 });

@@ -156,18 +156,11 @@ async function main() {
         actorId: authorId!,
         data: {
           title: `Cutover verification ${stamp}`,
-          challenge: "c",
-          approach: "a",
-          outcome: "o",
-          measurableResult: "m",
-          clientQuote: "q",
-          coverMediaId: mediaId,
-          facets: {
-            industry: ["verification"],
-            service: ["cutover"],
-            region: [],
-            outcome: ["works"],
-          },
+          tags: ["verification", "cutover"],
+          quote: "q",
+          quoter: "Cutover Bot",
+          introduction: "intro",
+          text: "body",
         },
       });
       check("createEntry ok", created.ok, JSON.stringify(!created.ok && created.errors));
@@ -179,18 +172,11 @@ async function main() {
         actorId: authorId!,
         data: {
           title: `Cutover verification ${stamp} (edited)`,
-          challenge: "c2",
-          approach: "a2",
-          outcome: "o2",
-          measurableResult: "m2",
-          clientQuote: "q2",
-          coverMediaId: mediaId,
-          facets: {
-            industry: ["verification"],
-            service: ["cutover"],
-            region: [],
-            outcome: ["works"],
-          },
+          tags: ["verification", "cutover"],
+          quote: "q2",
+          quoter: "Cutover Bot",
+          introduction: "intro2",
+          text: "body2",
         },
       });
       check("updateEntry ok", updated.ok);

@@ -118,6 +118,31 @@ export default function RichTextEditor({
         input.click();
       });
 
+      // Paste as plain text only: strip all formatting from clipboard content
+      // (Word, web pages, etc.). Runs in the capture phase and stops Quill's own
+      // paste handler so it can't re-apply the source's markup. Pasted image
+      // *files* carry no `text/plain`, so they are ignored — inline images go
+      // through the toolbar button and the media pipeline, never a paste.
+      quill.root.addEventListener(
+        "paste",
+        (e: ClipboardEvent) => {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          const text = (e.clipboardData?.getData("text/plain") ?? "").replace(
+            /\r\n?/g,
+            "\n",
+          );
+          const range = quill.getSelection(true);
+          if (!range) return;
+          if (range.length) quill.deleteText(range.index, range.length, "user");
+          if (text) {
+            quill.insertText(range.index, text, "user");
+            quill.setSelection(range.index + text.length, 0, "user");
+          }
+        },
+        true,
+      );
+
       // Seed existing content (may be legacy plain text or HTML) BEFORE the
       // change listener, so seeding doesn't mark the form dirty.
       if (valueRef.current) {

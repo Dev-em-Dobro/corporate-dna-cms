@@ -27,29 +27,27 @@ export interface FieldSpec {
  */
 export const FIELDS: Record<ContentType, FieldSpec[]> = {
   case: [
-    { name: "title", label: "Title", kind: "text", required: true },
-    { name: "summary", label: "Summary", kind: "richtext" },
-    { name: "challenge", label: "Challenge", kind: "richtext", required: true },
-    { name: "approach", label: "Approach", kind: "richtext", required: true },
-    { name: "outcome", label: "Outcome", kind: "richtext", required: true },
+    { name: "tags", label: "Tags", kind: "stringList" },
+    { name: "title", label: "Page title", kind: "text", required: true },
+    { name: "quote", label: "Quote", kind: "textarea" },
+    { name: "quoter", label: "Quoter", kind: "text" },
     {
-      name: "measurableResult",
-      label: "Measurable result",
-      kind: "richtext",
-      required: true,
-    },
-    { name: "clientQuote", label: "Client quote", kind: "richtext", required: true },
-    { name: "coverMediaId", label: "Cover image", kind: "media" },
-    {
-      name: "videoUrl",
-      label: "Video (YouTube URL)",
+      name: "mutedVideoUrl",
+      label: "Interview video (URL)",
       kind: "url",
-      help: "Optional YouTube link",
+      help: "Video that autoplays without sound",
     },
-    { name: "facets", label: "Facets", kind: "facets" },
+    { name: "introduction", label: "Introduction", kind: "richtext" },
+    { name: "text", label: "Text", kind: "richtext" },
   ],
   solution: [
     { name: "title", label: "Title", kind: "text", required: true },
+    {
+      name: "bannerMediaId",
+      label: "Banner background image",
+      kind: "media",
+      help: "Background image for the banner",
+    },
     {
       name: "problemStatement",
       label: "Problem statement",

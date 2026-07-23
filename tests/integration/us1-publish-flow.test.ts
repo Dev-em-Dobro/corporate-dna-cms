@@ -8,11 +8,10 @@ import { createTestUser, uniqueTitle } from "../helpers/db";
 function validCase(title: string) {
   return {
     title,
-    challenge: "c",
-    approach: "a",
-    outcome: "o",
-    measurableResult: "m",
-    clientQuote: "q",
+    quote: "q",
+    quoter: "Jane Doe",
+    introduction: "intro",
+    text: "body",
   };
 }
 
@@ -33,12 +32,17 @@ d("US1 create -> publish flow", () => {
 
   it("blocks publish when a referenced media asset does not exist", async () => {
     const actorId = await createTestUser();
-    const data = { ...validCase(uniqueTitle("Case")), coverMediaId: crypto.randomUUID() };
-    const created = await createEntry("case", { data, actorId });
+    // Cases no longer carry a media field; use `insight`, which has a cover image.
+    const data = {
+      title: uniqueTitle("Insight"),
+      body: "b",
+      coverMediaId: crypto.randomUUID(),
+    };
+    const created = await createEntry("insight", { data, actorId });
     expect(created.ok).toBe(true);
     if (!created.ok) return;
 
-    const published = await publishEntry("case", created.entry.id, actorId);
+    const published = await publishEntry("insight", created.entry.id, actorId);
     expect(published.ok).toBe(false); // media gate
   });
 });

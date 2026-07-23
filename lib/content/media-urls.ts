@@ -31,6 +31,7 @@ export function assetDeliveryUrl(row: UrlRow): string | undefined {
 export function collectDataMediaIds(data: Record<string, unknown>): string[] {
   const ids: string[] = [];
   if (typeof data.coverMediaId === "string") ids.push(data.coverMediaId);
+  if (typeof data.bannerMediaId === "string") ids.push(data.bannerMediaId);
   if (typeof data.photoMediaId === "string") ids.push(data.photoMediaId);
   if (Array.isArray(data.items)) {
     for (const it of data.items as Array<Record<string, unknown>>) {
@@ -88,6 +89,10 @@ export function attachDataMediaUrls(
   if (typeof data.coverMediaId === "string") {
     const url = urls.get(data.coverMediaId);
     if (url) out.coverUrl = url;
+  }
+  if (typeof data.bannerMediaId === "string") {
+    const url = urls.get(data.bannerMediaId);
+    if (url) out.bannerUrl = url;
   }
   if (typeof data.photoMediaId === "string") {
     const url = urls.get(data.photoMediaId);
