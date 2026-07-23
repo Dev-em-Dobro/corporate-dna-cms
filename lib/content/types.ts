@@ -51,8 +51,6 @@ export const solutionSchema = z.object({
   title: z.string().min(1),
   problemStatement: z.string().min(1),
   body: z.string().default(""),
-  cta: z.object({ label: z.string().min(1), href: z.string().min(1) }),
-  proofRefs: z.array(z.string()).default([]),
 });
 
 export const personSchema = z.object({

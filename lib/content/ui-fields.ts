@@ -20,7 +20,7 @@ export interface FieldSpec {
 }
 
 /**
- * UI field layout per content type. Complex/nested fields (cta, elements, awards
+ * UI field layout per content type. Complex/nested fields (elements, awards
  * items) use the `json` kind — a JSON editor — to keep the generic form simple
  * while still supporting the full structured model.
  */
@@ -56,8 +56,6 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
       required: true,
     },
     { name: "body", label: "Body", kind: "richtext" },
-    { name: "cta", label: "CTA { label, href }", kind: "json" },
-    { name: "proofRefs", label: "Proof references", kind: "stringList" },
   ],
   person: [
     { name: "name", label: "Name", kind: "text", required: true },
@@ -115,8 +113,7 @@ export function emptyData(type: ContentType): Record<string, unknown> {
         base[f.name] = { industry: [], service: [], region: [], outcome: [] };
         break;
       case "json":
-        base[f.name] =
-          f.name === "cta" ? { label: "", href: "" } : [];
+        base[f.name] = [];
         break;
       default:
         base[f.name] = "";
