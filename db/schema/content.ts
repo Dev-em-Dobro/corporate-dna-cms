@@ -3,6 +3,7 @@ import {
   uuid,
   text,
   jsonb,
+  integer,
   timestamp,
   index,
   uniqueIndex,
@@ -26,6 +27,10 @@ export const contentEntries = pgTable(
     // Groups locale variants of the same logical entry (multilingual-ready).
     translationGroupId: uuid("translation_group_id").notNull().defaultRandom(),
     status: contentStatusEnum("status").notNull().default("draft"),
+    // Editorial sort position within a type (drag-and-drop ordering). Shared
+    // across the locale variants of one logical entry so the order is stable
+    // regardless of which locale the public read API is serving.
+    sortOrder: integer("sort_order").notNull().default(0),
     // Pointer to the live version snapshot (no FK to avoid a circular constraint).
     currentVersionId: uuid("current_version_id"),
     data: jsonb("data")
@@ -47,6 +52,7 @@ export const contentEntries = pgTable(
     uniqueIndex("content_type_slug_locale_uq").on(t.type, t.slug, t.locale),
     index("content_type_status_locale_idx").on(t.type, t.status, t.locale),
     index("content_translation_group_idx").on(t.translationGroupId),
+    index("content_type_sort_idx").on(t.type, t.sortOrder),
   ],
 );
 

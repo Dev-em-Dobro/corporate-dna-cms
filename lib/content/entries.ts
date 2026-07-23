@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import {
   contentEntries,
@@ -61,15 +61,25 @@ async function missingMediaRefs(
 
 export async function listEntries(
   type: ContentType,
-  opts: { status?: "draft" | "published" | "archived"; limit?: number; offset?: number } = {},
+  opts: {
+    status?: "draft" | "published" | "archived";
+    limit?: number;
+    offset?: number;
+    /** "sortOrder" for the editorial drag-and-drop order; default is recency. */
+    orderBy?: "updatedAt" | "sortOrder";
+  } = {},
 ): Promise<ContentEntry[]> {
   const conds = [eq(contentEntries.type, type), isNull(contentEntries.deletedAt)];
   if (opts.status) conds.push(eq(contentEntries.status, opts.status));
+  const order =
+    opts.orderBy === "sortOrder"
+      ? [asc(contentEntries.sortOrder), asc(contentEntries.createdAt)]
+      : [desc(contentEntries.updatedAt)];
   return db
     .select()
     .from(contentEntries)
     .where(and(...conds))
-    .orderBy(desc(contentEntries.updatedAt))
+    .orderBy(...order)
     .limit(opts.limit ?? 50)
     .offset(opts.offset ?? 0);
 }
@@ -310,6 +320,12 @@ export async function unpublishEntry(
   return { ok: true, entry: updated };
 }
 
+/**
+ * Soft-delete a logical entry: every locale variant sharing the source's
+ * translationGroupId is marked deleted in one shot, so no orphan translations
+ * linger. Published variants trigger a revalidation so the public site drops
+ * them promptly rather than serving stale content until the cache expires.
+ */
 export async function deleteEntry(
   type: ContentType,
   id: string,
@@ -317,16 +333,87 @@ export async function deleteEntry(
 ): Promise<void> {
   const entry = await getEntry(type, id);
   if (!entry) throw new NotFoundError("Entry not found");
+
+  // All still-live variants of this logical entry.
+  const variants = await db
+    .select()
+    .from(contentEntries)
+    .where(
+      and(
+        eq(contentEntries.translationGroupId, entry.translationGroupId),
+        isNull(contentEntries.deletedAt),
+      ),
+    );
+
+  const now = new Date();
   await db
     .update(contentEntries)
-    .set({ deletedAt: new Date(), updatedBy: actorId })
-    .where(eq(contentEntries.id, id));
+    .set({ deletedAt: now, updatedBy: actorId, updatedAt: now })
+    .where(
+      and(
+        eq(contentEntries.translationGroupId, entry.translationGroupId),
+        isNull(contentEntries.deletedAt),
+      ),
+    );
+
   await writeAudit({
     actorId,
     action: "entry.delete",
     targetType: "entry",
-    targetId: id,
-    metadata: { type },
+    targetId: entry.translationGroupId,
+    metadata: { type, variantIds: variants.map((v) => v.id) },
+  });
+
+  // A deleted published variant vanishes from the public site — same effect as
+  // an unpublish, so reuse that revalidation event.
+  await Promise.all(
+    variants
+      .filter((v) => v.status === "published")
+      .map((v) =>
+        dispatchRevalidation({
+          event: "entry.unpublished",
+          type,
+          slug: v.slug,
+          locale: v.locale,
+          at: now.toISOString(),
+        }),
+      ),
+  );
+}
+
+/**
+ * Persist an editorial ordering for a type (drag-and-drop). `orderedGroupIds`
+ * lists translationGroupIds in the desired order; every locale variant of a
+ * group gets the group's index as its sortOrder, keeping the order identical
+ * across locales.
+ */
+export async function reorderEntries(
+  type: ContentType,
+  orderedGroupIds: string[],
+  actorId: string,
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    for (let i = 0; i < orderedGroupIds.length; i++) {
+      await tx
+        .update(contentEntries)
+        .set({ sortOrder: i, updatedBy: actorId })
+        .where(
+          and(
+            eq(contentEntries.type, type),
+            eq(contentEntries.translationGroupId, orderedGroupIds[i]),
+            isNull(contentEntries.deletedAt),
+          ),
+        );
+    }
+  });
+
+  // No single target: a reorder acts on the whole collection. target_id is a
+  // uuid column, so the type lives in metadata, not targetId.
+  await writeAudit({
+    actorId,
+    action: "entry.reorder",
+    targetType: "entry",
+    metadata: { type, order: orderedGroupIds },
   });
 }
 

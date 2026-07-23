@@ -7,6 +7,8 @@ import { groupByTranslationGroup } from "@/lib/content/translations";
 import { StatusBadge } from "@/components/ui/Feedback";
 import { buttonPrimary } from "@/components/ui/styles";
 import AddTranslationButton from "@/components/AddTranslationButton";
+import RowActions from "@/components/admin/RowActions";
+import PeopleReorderList from "@/components/admin/PeopleReorderList";
 
 export default async function CollectionList({
   params,
@@ -17,8 +19,13 @@ export default async function CollectionList({
   const type = SEGMENT_TO_TYPE[collection];
   if (!type) notFound();
   const def = defForType(type);
+  // People carry an editorial order (drag-and-drop); everything else is recency.
+  const isPeople = type === "person";
   const [entries, active, defaultLocale] = await Promise.all([
-    listEntries(type, { limit: 100 }).catch(() => []),
+    listEntries(type, {
+      limit: 100,
+      orderBy: isPeople ? "sortOrder" : "updatedAt",
+    }).catch(() => []),
     activeLocales(),
     getDefaultLocale(),
   ]);
@@ -58,6 +65,12 @@ export default async function CollectionList({
             New {def.label}
           </Link>
         </div>
+      ) : isPeople ? (
+        <PeopleReorderList
+          rows={groups}
+          active={active}
+          collection={collection}
+        />
       ) : (
         <div className="overflow-x-auto rounded-lg border border-line-strong">
           <table className="w-full min-w-[36rem] text-sm">
@@ -69,6 +82,9 @@ export default async function CollectionList({
                 <th scope="col" className="px-4 py-2 font-semibold">Title</th>
                 <th scope="col" className="px-4 py-2 font-semibold">Languages</th>
                 <th scope="col" className="px-4 py-2 font-semibold">Updated</th>
+                <th scope="col" className="px-4 py-2 text-right font-semibold">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -116,6 +132,13 @@ export default async function CollectionList({
                     <time dateTime={g.updatedAt}>
                       {new Date(g.updatedAt).toLocaleDateString()}
                     </time>
+                  </td>
+                  <td className="px-4 py-2 text-right">
+                    <RowActions
+                      collection={collection}
+                      id={g.primaryId}
+                      title={g.title}
+                    />
                   </td>
                 </tr>
               ))}

@@ -1,4 +1,4 @@
-import { and, arrayOverlaps, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, arrayOverlaps, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { contentEntries, caseStudyFacets } from "@/db/schema";
 import { defForType, type ContentType } from "./types";
@@ -80,11 +80,17 @@ export async function listPublished(type: ContentType, params: ListParams = {}) 
     isNull(contentEntries.deletedAt),
     eq(contentEntries.locale, locale),
   ];
+  // People carry an editorial order set via drag-and-drop in the admin; every
+  // other type stays newest-first.
+  const orderBy =
+    type === "person"
+      ? [asc(contentEntries.sortOrder), desc(contentEntries.publishedAt)]
+      : [desc(contentEntries.publishedAt)];
   const rows = await db
     .select()
     .from(contentEntries)
     .where(and(...conds))
-    .orderBy(desc(contentEntries.publishedAt))
+    .orderBy(...orderBy)
     .limit(pageSize)
     .offset(offset);
   const [{ total }] = await db
