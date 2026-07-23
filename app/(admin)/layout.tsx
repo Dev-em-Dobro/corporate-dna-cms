@@ -9,7 +9,7 @@ const NAV: (NavItem & { adminOnly?: boolean })[] = [
   { href: "/people", label: "People" },
   { href: "/regions", label: "Regions" },
   { href: "/insights", label: "Insights" },
-  { href: "/pages", label: "Pages" },
+  { href: "/pages", label: "Legal pages" },
   { href: "/media", label: "Media" },
   { href: "/settings/languages", label: "Languages", adminOnly: true },
   { href: "/users", label: "Users & audit", adminOnly: true },
