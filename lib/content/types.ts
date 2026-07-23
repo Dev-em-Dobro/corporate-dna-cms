@@ -22,6 +22,20 @@ const youtubeUrl = z
     message: "Must be a YouTube URL",
   });
 
+/**
+ * Optional social/contact fields. The admin form sends "" for a blank input, so
+ * treat empty as "not provided" before format-checking — a blank field must
+ * never block a save.
+ */
+const optionalUrl = z.preprocess(
+  (v) => (v === "" ? undefined : v),
+  z.url().optional(),
+);
+const optionalEmail = z.preprocess(
+  (v) => (v === "" ? undefined : v),
+  z.email().optional(),
+);
+
 // ---------------------------------------------------------------------------
 // Per-type field schemas (validate content_entries.data). Required fields are
 // enforced here and checked at publish time (FR-006/FR-007).
@@ -59,7 +73,11 @@ export const personSchema = z.object({
   bio: z.string().min(1),
   photoMediaId: z.uuid().optional(),
   regionSlug: z.string().optional(),
-  linkedin: z.url().optional(),
+  linkedin: optionalUrl,
+  instagram: optionalUrl,
+  facebook: optionalUrl,
+  x: optionalUrl,
+  email: optionalEmail,
 });
 
 export const regionSchema = z.object({

@@ -46,6 +46,7 @@ export default async function EditEntry({
           status: entry.status,
         }}
         label={defForType(type).label}
+        canPreview={type !== "person"}
       />
     </>
   );

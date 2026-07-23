@@ -5,6 +5,7 @@ export type FieldKind =
   | "textarea"
   | "richtext"
   | "url"
+  | "email"
   | "media"
   | "date"
   | "stringList"
@@ -64,6 +65,10 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
     { name: "photoMediaId", label: "Photo", kind: "media" },
     { name: "regionSlug", label: "Region slug", kind: "text" },
     { name: "linkedin", label: "LinkedIn URL", kind: "url" },
+    { name: "instagram", label: "Instagram URL", kind: "url" },
+    { name: "facebook", label: "Facebook URL", kind: "url" },
+    { name: "x", label: "X (Twitter) URL", kind: "url" },
+    { name: "email", label: "Email", kind: "email" },
   ],
   region: [
     { name: "name", label: "Name", kind: "text", required: true },

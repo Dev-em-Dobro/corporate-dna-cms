@@ -39,6 +39,7 @@ export default function ContentEditor({
   fixedSlug,
   availableLocales,
   defaultLocale,
+  canPreview = true,
 }: {
   apiType: string;
   collection: string;
@@ -51,6 +52,8 @@ export default function ContentEditor({
   /** Active languages offered in the create-mode language picker. */
   availableLocales?: { code: string; label: string }[];
   defaultLocale?: string;
+  /** Show the "Preview" button. Off for types with no public detail page. */
+  canPreview?: boolean;
 }) {
   const router = useRouter();
   const formId = useId();
@@ -419,9 +422,11 @@ export default function ContentEditor({
             >
               Version history
             </button>
-            <button type="button" onClick={preview} className={buttonSecondary}>
-              Preview
-            </button>
+            {canPreview && (
+              <button type="button" onClick={preview} className={buttonSecondary}>
+                Preview
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -688,7 +693,15 @@ export default function ContentEditor({
           <input
             {...a11y}
             className={`${input} ${ring}`}
-            type={f.kind === "url" ? "url" : f.kind === "date" ? "date" : "text"}
+            type={
+              f.kind === "url"
+                ? "url"
+                : f.kind === "email"
+                  ? "email"
+                  : f.kind === "date"
+                    ? "date"
+                    : "text"
+            }
             value={String(val ?? "")}
             onChange={(e) => set(f.name, e.target.value)}
           />
