@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/auth/guards";
-import { updateUser, resetMfa } from "@/lib/users/service";
+import { updateUser, resetMfa, deleteUser } from "@/lib/users/service";
 import { writeAudit } from "@/lib/audit/log";
 import { jsonOk, jsonError, clientMeta, handleError } from "@/lib/http";
 
@@ -72,6 +72,31 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       targetType: "user",
       targetId: id,
       metadata: { reason: "mfa_reset", ...clientMeta(req) },
+    });
+    return jsonOk({ ok: true });
+  } catch (e) {
+    return handleError(e);
+  }
+}
+
+/**
+ * Delete a user outright. The service refuses to remove the last active
+ * administrator (409) and cascades `profiles` from `auth.users`; audit rows and
+ * authored content are kept with the actor nulled and the email snapshot intact.
+ */
+export async function DELETE(req: NextRequest, ctx: Ctx) {
+  try {
+    const admin = await requireAdmin();
+    const { id } = await ctx.params;
+
+    await deleteUser(id);
+    await writeAudit({
+      actorId: admin.sub,
+      actorEmail: admin.email,
+      action: "user.deleted",
+      targetType: "user",
+      targetId: id,
+      metadata: clientMeta(req),
     });
     return jsonOk({ ok: true });
   } catch (e) {

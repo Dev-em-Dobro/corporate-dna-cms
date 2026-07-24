@@ -134,6 +134,33 @@ export default function UsersManager() {
     }
   }
 
+  async function removeUser(user: UserRow) {
+    const ok = await confirm({
+      title: `Delete ${user.email}?`,
+      description:
+        "Their account and sign-in are removed permanently. Anything they authored and the audit trail are kept, with the author left blank. This cannot be undone.",
+      confirmLabel: "Delete user",
+      destructive: true,
+    });
+    if (!ok) return;
+    setError("");
+    setNotice("");
+    setWorking(true);
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}`, {
+        method: "DELETE",
+      });
+      const b = await res.json().catch(() => ({}));
+      if (!res.ok) return setError(b.error ?? "Could not delete the user.");
+      setNotice(`${user.email} was deleted.`);
+      load();
+    } catch {
+      setError("Could not reach the server.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
   async function patch(id: string, body: Record<string, string>) {
     setError("");
     setNotice("");
@@ -264,7 +291,8 @@ export default function UsersManager() {
         <div className="mb-8 overflow-x-auto rounded-lg border border-line-strong">
           <table className="w-full min-w-[36rem] text-sm">
             <caption className="sr-only">
-              CMS users with their role, account status, and second-factor actions
+              CMS users with their role, account status, second-factor actions,
+              and account deletion
             </caption>
             <thead className="bg-paper text-left text-xs uppercase tracking-wide text-muted">
               <tr>
@@ -272,6 +300,9 @@ export default function UsersManager() {
                 <th scope="col" className="px-4 py-2 font-semibold">Role</th>
                 <th scope="col" className="px-4 py-2 font-semibold">Status</th>
                 <th scope="col" className="px-4 py-2 font-semibold">Second factor</th>
+                <th scope="col" className="px-4 py-2 font-semibold">
+                  <span className="sr-only">Delete</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -313,6 +344,20 @@ export default function UsersManager() {
                       className={buttonDanger}
                     >
                       Reset
+                    </button>
+                  </td>
+                  <td className="px-4 py-2 text-right">
+                    {/* Deletion is guarded server-side against removing the last
+                        active administrator; the button stays enabled and the
+                        409 surfaces as an error message rather than being
+                        second-guessed in the UI. */}
+                    <button
+                      type="button"
+                      onClick={() => removeUser(u)}
+                      className={buttonDanger}
+                      aria-label={`Delete ${u.email}`}
+                    >
+                      Delete
                     </button>
                   </td>
                 </tr>

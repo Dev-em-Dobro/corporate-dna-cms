@@ -55,6 +55,7 @@ export async function guardedRoutes(): Promise<GuardedRoute[]> {
     { name: "POST /api/admin/users", adminOnly: true, call: () => users.POST(jsonRequest("/api/admin/users", { email: "x@example.com", role: "editor" })) },
     { name: "PUT /api/admin/users/[id]", adminOnly: true, call: () => usersId.PUT(jsonRequest(`/api/admin/users/${NIL}`, { role: "editor" }, "PUT"), ctx({ id: NIL })) },
     { name: "POST /api/admin/users/[id]", adminOnly: true, call: () => usersId.POST(jsonRequest(`/api/admin/users/${NIL}`, { action: "reset-mfa" }), ctx({ id: NIL })) },
+    { name: "DELETE /api/admin/users/[id]", adminOnly: true, call: () => usersId.DELETE(get(`/api/admin/users/${NIL}`), ctx({ id: NIL })) },
     { name: "GET /api/admin/webhooks", adminOnly: true, call: () => webhooks.GET() },
     { name: "POST /api/admin/webhooks", adminOnly: true, call: () => webhooks.POST(jsonRequest("/api/admin/webhooks", { url: "https://example.com" })) },
     { name: "PUT /api/admin/webhooks/[id]", adminOnly: true, call: () => webhooksId.PUT(jsonRequest(`/api/admin/webhooks/${NIL}`, { active: false }, "PUT"), ctx({ id: NIL })) },
@@ -79,4 +80,4 @@ export async function guardedRoutes(): Promise<GuardedRoute[]> {
 /** The 13 admin route files tasks.md and SC-002 talk about. */
 export const ADMIN_ROUTE_FILE_COUNT = 13;
 /** Handlers across those 13 files (audited by the sweep's count assertion). */
-export const ADMIN_HANDLER_COUNT = 19;
+export const ADMIN_HANDLER_COUNT = 20;
