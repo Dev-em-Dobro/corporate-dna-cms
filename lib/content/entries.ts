@@ -216,17 +216,15 @@ export async function updateEntry(
         currentVersionId: version.id,
         updatedBy: input.actorId,
         updatedAt: new Date(),
+        // Edits to a published entry are staged, not live: flag them so the UI
+        // shows "Publish changes". Drafts stay as they are.
+        ...(current.status === "published"
+          ? { hasUnpublishedChanges: true }
+          : {}),
       })
       .where(eq(contentEntries.id, id))
       .returning();
 
-    if (type === "case") {
-      const facets = extractCaseFacets(data);
-      await tx
-        .insert(caseStudyFacets)
-        .values({ entryId: id, ...facets })
-        .onConflictDoUpdate({ target: caseStudyFacets.entryId, set: facets });
-    }
     return updated;
   });
 
