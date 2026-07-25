@@ -60,6 +60,7 @@ export default async function SingletonEditor({
         data: entry.data,
         currentVersionId: entry.currentVersionId,
         status: entry.status,
+        hasUnpublishedChanges: entry.hasUnpublishedChanges,
       }
     : { data: emptyData(cfg.type) };
 

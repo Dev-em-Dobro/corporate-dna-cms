@@ -27,6 +27,7 @@ interface Initial {
   data: Record<string, unknown>;
   currentVersionId?: string | null;
   status?: string;
+  hasUnpublishedChanges?: boolean;
 }
 
 export default function ContentEditor({
@@ -61,6 +62,9 @@ export default function ContentEditor({
   const [id, setId] = useState(initial.id);
   const [versionId, setVersionId] = useState(initial.currentVersionId ?? null);
   const [status, setStatus] = useState(initial.status ?? "draft");
+  const [hasUnpublished, setHasUnpublished] = useState(
+    initial.hasUnpublishedChanges ?? false,
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<{
     tone: "success" | "error";
@@ -232,6 +236,7 @@ export default function ContentEditor({
       setId(body.id);
       setVersionId(body.currentVersionId ?? null);
       setStatus(body.status ?? "draft");
+      setHasUnpublished(body.hasUnpublishedChanges ?? false);
       setDirty(false);
       setMessage({ tone: "success", text: "Draft saved." });
       if (!id && mode === "collection") {
@@ -367,6 +372,7 @@ export default function ContentEditor({
       if (!res.ok)
         return setMessage({ tone: "error", text: body.error ?? "Action failed" });
       setStatus(body.status);
+      setHasUnpublished(body.hasUnpublishedChanges ?? false);
       setMessage({
         tone: "success",
         text: action === "publish" ? "Published." : "Unpublished.",
@@ -546,6 +552,18 @@ export default function ContentEditor({
 
       {/* Actions stay reachable on long forms without hiding page content. */}
       <div className="sticky bottom-0 mt-8 flex flex-wrap items-center gap-3 border-t border-line bg-white/95 py-4 backdrop-blur">
+        {/* Status badge (published only). */}
+        {id && status === "published" && !hasUnpublished && (
+          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+            ● Live
+          </span>
+        )}
+        {id && status === "published" && hasUnpublished && (
+          <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+            ⚠ Unpublished changes
+          </span>
+        )}
+
         <button
           type="button"
           onClick={() => saveDraft()}
@@ -555,6 +573,8 @@ export default function ContentEditor({
         >
           {busy ? "Saving…" : "Save draft"}
         </button>
+
+        {/* Never-published draft: Publish is the primary action. */}
         {id && status !== "published" && (
           <button
             type="button"
@@ -566,6 +586,21 @@ export default function ContentEditor({
             Publish
           </button>
         )}
+
+        {/* Published WITH pending edits: promote the staged changes. */}
+        {id && status === "published" && hasUnpublished && (
+          <button
+            type="button"
+            onClick={() => doAction("publish")}
+            disabled={busy}
+            aria-busy={busy}
+            className={buttonPrimary}
+          >
+            Publish changes
+          </button>
+        )}
+
+        {/* Published: allow taking it offline. */}
         {id && status === "published" && (
           <button
             type="button"
@@ -577,10 +612,19 @@ export default function ContentEditor({
             Unpublish
           </button>
         )}
+
         {message && (
           <StatusMessage tone={message.tone}>{message.text}</StatusMessage>
         )}
       </div>
+
+      {/* Explain what "unpublished changes" means, right under the actions. */}
+      {id && status === "published" && hasUnpublished && (
+        <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          You have unpublished changes — the site still shows the last published
+          version. Click “Publish changes” to make them live.
+        </p>
+      )}
 
       {id && (
         <VersionHistory
