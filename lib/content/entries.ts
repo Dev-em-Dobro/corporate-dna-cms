@@ -551,17 +551,13 @@ export async function restoreVersion(
         currentVersionId: newVersion.id,
         updatedBy: actorId,
         updatedAt: new Date(),
+        ...(current.status === "published"
+          ? { hasUnpublishedChanges: true }
+          : {}),
       })
       .where(eq(contentEntries.id, id))
       .returning();
 
-    if (type === "case") {
-      const facets = extractCaseFacets(ver.data);
-      await tx
-        .insert(caseStudyFacets)
-        .values({ entryId: id, ...facets })
-        .onConflictDoUpdate({ target: caseStudyFacets.entryId, set: facets });
-    }
     return updated;
   });
 
