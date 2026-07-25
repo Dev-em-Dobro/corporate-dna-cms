@@ -314,7 +314,12 @@ export async function unpublishEntry(
   const now = new Date();
   const [updated] = await db
     .update(contentEntries)
-    .set({ status: "draft", updatedBy: actorId, updatedAt: now })
+    .set({
+      status: "draft",
+      hasUnpublishedChanges: false,
+      updatedBy: actorId,
+      updatedAt: now,
+    })
     .where(eq(contentEntries.id, id))
     .returning();
 
