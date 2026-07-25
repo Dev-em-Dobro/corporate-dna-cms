@@ -2,15 +2,18 @@
 
 import { useEffect, useRef, useState } from "react";
 import "quill/dist/quill.snow.css";
+import { youtubeEmbedUrl } from "@/lib/content/youtube";
 
 // Standard toolbar. Inline images upload through the media pipeline (Bunny) and
 // are inserted as CDN URLs — never base64 (the sanitiser drops `data:` sources).
+// The `video` button embeds a YouTube link (validated below); the sanitiser
+// enforces the same YouTube-only rule on the server.
 const TOOLBAR = [
   [{ header: [2, 3, false] }],
   ["bold", "italic", "underline"],
   [{ list: "ordered" }, { list: "bullet" }],
   ["blockquote"],
-  ["link", "image"],
+  ["link", "image", "video"],
   ["clean"],
 ];
 
@@ -118,6 +121,93 @@ export default function RichTextEditor({
         input.click();
       });
 
+      // Embed a YouTube video. The default Quill handler would accept any URL;
+      // we validate/normalise to a canonical nocookie embed so what the author
+      // sees matches what the server sanitiser keeps (non-YouTube is rejected).
+      toolbar.addHandler("video", () => {
+        if (disabledRef.current) return;
+        const input = window.prompt("Paste a YouTube video URL");
+        if (input == null) return; // cancelled
+        const embed = youtubeEmbedUrl(input);
+        if (!embed) {
+          setUploadError("Invalid or non-YouTube video URL");
+          return;
+        }
+        setUploadError("");
+        const range = quill.getSelection(true);
+        const index = range ? range.index : quill.getLength();
+        quill.insertEmbed(index, "video", embed, "user");
+        quill.setSelection(index + 1, 0);
+      });
+
+      // Embed delete affordance. Selecting an embed to delete it is fiddly in
+      // Quill (a video iframe even swallows the click — it is made
+      // `pointer-events:none` in the editor for this reason). A floating "×"
+      // button follows whichever image/video the pointer is over; clicking it
+      // removes that embed. Hit-testing is by bounding box so it works for the
+      // non-interactive iframe as well as images.
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.textContent = "×";
+      removeBtn.setAttribute("aria-label", "Remove embed");
+      removeBtn.style.cssText =
+        "position:absolute;z-index:10;display:none;width:36px;height:36px;" +
+        "padding:0;border:none;border-radius:9999px;background:#dc2626;" +
+        "color:#fff;font-size:24px;line-height:1;cursor:pointer;" +
+        "box-shadow:0 1px 4px rgba(0,0,0,.35);";
+      quill.container.appendChild(removeBtn);
+
+      let hovered: HTMLElement | null = null;
+
+      const embedAt = (x: number, y: number): HTMLElement | null => {
+        const nodes = quill.root.querySelectorAll<HTMLElement>(
+          "img, iframe.ql-video",
+        );
+        for (const el of nodes) {
+          const r = el.getBoundingClientRect();
+          if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
+            return el;
+          }
+        }
+        return null;
+      };
+
+      const hideRemove = () => {
+        removeBtn.style.display = "none";
+        hovered = null;
+      };
+
+      quill.root.addEventListener("mousemove", (e: MouseEvent) => {
+        if (disabledRef.current) return;
+        const el = embedAt(e.clientX, e.clientY);
+        hovered = el;
+        if (!el) {
+          removeBtn.style.display = "none";
+          return;
+        }
+        const box = quill.container.getBoundingClientRect();
+        const r = el.getBoundingClientRect();
+        removeBtn.style.top = `${r.top - box.top + 6}px`;
+        removeBtn.style.left = `${r.right - box.left - 42}px`;
+        removeBtn.style.display = "";
+      });
+
+      // Moving onto the button (a sibling of the editor) must not hide it;
+      // leaving the editor for anywhere else does.
+      quill.root.addEventListener("mouseleave", (e: MouseEvent) => {
+        if (e.relatedTarget !== removeBtn) removeBtn.style.display = "none";
+      });
+      removeBtn.addEventListener("mouseleave", hideRemove);
+
+      removeBtn.addEventListener("click", () => {
+        if (!hovered || disabledRef.current) return;
+        const blot = Quill.find(hovered);
+        if (!blot) return;
+        const index = quill.getIndex(blot as Parameters<typeof quill.getIndex>[0]);
+        quill.deleteText(index, 1, "user"); // embeds have length 1
+        hideRemove();
+      });
+
       // Paste as plain text only: strip all formatting from clipboard content
       // (Word, web pages, etc.). Runs in the capture phase and stops Quill's own
       // paste handler so it can't re-apply the source's markup. Pasted image
@@ -156,9 +246,10 @@ export default function RichTextEditor({
       quill.on("text-change", () => {
         if (seedingRef.current) return; // ignore programmatic re-seeds
         // Treat Quill's empty document ("<p><br></p>") as "" so required
-        // validation and the unsaved-changes flag match the old textarea. An
-        // image-only document has no text but is NOT empty — keep its markup.
-        const hasEmbed = quill.root.querySelector("img") !== null;
+        // validation and the unsaved-changes flag match the old textarea. A
+        // document with only an image or video embed has no text but is NOT
+        // empty — keep its markup.
+        const hasEmbed = quill.root.querySelector("img, iframe") !== null;
         const html =
           quill.getText().trim() === "" && !hasEmbed
             ? ""
@@ -201,8 +292,10 @@ export default function RichTextEditor({
   return (
     // Give the editable area a taller default (min-height, so it still grows
     // with content). Targets Quill's `.ql-editor` via an arbitrary variant.
+    // Embedded YouTube videos (`.ql-video`) span the full content width at a
+    // fixed 16:9 ratio, so the author sees them exactly as the site renders.
     <div
-      className={`[&_.ql-editor]:min-h-52 ${
+      className={`[&_.ql-editor]:min-h-52 [&_.ql-video]:block [&_.ql-video]:w-full [&_.ql-video]:h-auto [&_.ql-video]:aspect-video [&_.ql-video]:pointer-events-none ${
         invalid ? "rounded-md ring-1 ring-danger" : ""
       } ${disabled ? "opacity-60" : ""}`}
     >

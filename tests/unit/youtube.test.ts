@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeYouTube } from "@/lib/content/youtube";
+import { normalizeYouTube, youtubeEmbedUrl } from "@/lib/content/youtube";
 import { validateContent } from "@/lib/content/types";
 
 const CANONICAL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
@@ -33,6 +33,31 @@ describe("YouTube normalisation (TAREFA 4 / FR-801-803)", () => {
       "ftp://youtu.be/dQw4w9WgXcQ",
     ]) {
       expect(normalizeYouTube(input), input).toBeNull();
+    }
+  });
+});
+
+describe("youtubeEmbedUrl (inline video embed)", () => {
+  const EMBED = "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ";
+
+  it("builds a canonical nocookie embed from any accepted form", () => {
+    for (const input of [
+      "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "https://youtu.be/dQw4w9WgXcQ",
+      "https://www.youtube.com/embed/dQw4w9WgXcQ?showinfo=0",
+      "https://www.youtube.com/shorts/dQw4w9WgXcQ",
+    ]) {
+      expect(youtubeEmbedUrl(input), input).toBe(EMBED);
+    }
+  });
+
+  it("is idempotent on its own output", () => {
+    expect(youtubeEmbedUrl(EMBED)).toBe(EMBED);
+  });
+
+  it("returns null for malformed or non-YouTube URLs", () => {
+    for (const input of ["", "https://vimeo.com/12345", "javascript:alert(1)"]) {
+      expect(youtubeEmbedUrl(input), input).toBeNull();
     }
   });
 });
