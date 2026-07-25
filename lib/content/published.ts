@@ -15,6 +15,17 @@ export interface ListParams {
   locale?: string;
   page?: number;
   pageSize?: number;
+  /** Filter to entries carrying ANY of these tags (FR-817). */
+  tags?: string[];
+}
+
+/**
+ * SQL predicate: the entry's `data.tags` JSONB array overlaps `tags` (OR
+ * semantics). Backed by jsonb_exists_any — the function form of the `?|`
+ * operator — so it reads cleanly regardless of driver placeholder handling.
+ */
+function tagOverlap(tags: string[]) {
+  return sql`jsonb_exists_any(${contentEntries.data} -> 'tags', ${tags})`;
 }
 
 function paging(params: ListParams) {
@@ -80,6 +91,7 @@ export async function listPublished(type: ContentType, params: ListParams = {}) 
     isNull(contentEntries.deletedAt),
     eq(contentEntries.locale, locale),
   ];
+  if (params.tags?.length) conds.push(tagOverlap(params.tags));
   // People carry an editorial order set via drag-and-drop in the admin; every
   // other type stays newest-first.
   const orderBy =
@@ -127,6 +139,7 @@ export async function listPublishedCases(params: CaseFilter = {}) {
     isNull(contentEntries.deletedAt),
     eq(contentEntries.locale, locale),
   ];
+  if (params.tags?.length) conds.push(tagOverlap(params.tags));
   if (params.industry?.length)
     conds.push(arrayOverlaps(caseStudyFacets.industry, params.industry));
   if (params.service?.length)
@@ -198,8 +211,15 @@ export async function getPublished(
   };
 
   let entry = await fetchOne(locale);
-  if (!entry && locale !== DEFAULT_LOCALE) entry = await fetchOne(DEFAULT_LOCALE);
+  let localeFallback = false;
+  if (!entry && locale !== DEFAULT_LOCALE) {
+    entry = await fetchOne(DEFAULT_LOCALE);
+    localeFallback = entry != null;
+  }
   if (!entry) return null;
 
-  return serializeEntry(entry);
+  // Tell the consumer whether it received the requested locale or the EN
+  // fallback (FR-809/810), so the site can flag machine-untranslated content.
+  const serialized = await serializeEntry(entry);
+  return { ...serialized, requestedLocale: locale, localeFallback };
 }

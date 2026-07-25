@@ -645,6 +645,7 @@ export default function ContentEditor({
             describedBy={describedBy}
             value={typeof val === "string" && val ? val : undefined}
             onChange={(mediaId) => set(f.name, mediaId ?? "")}
+            uploadField={f.uploadField}
             disabled={locked}
           />
         );

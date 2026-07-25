@@ -18,6 +18,12 @@ export interface FieldSpec {
   kind: FieldKind;
   required?: boolean;
   help?: string;
+  /**
+   * For `media` fields: the upload policy key (see lib/media/policies.ts) sent as
+   * `field` so uploads through this control are validated against that policy —
+   * e.g. `logo` enforces a transparent PNG within size/dimension limits.
+   */
+  uploadField?: string;
 }
 
 /**
@@ -36,6 +42,25 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
       label: "Interview video (URL)",
       kind: "url",
       help: "Video that autoplays without sound",
+    },
+    {
+      name: "youtube",
+      label: "YouTube video (URL)",
+      kind: "url",
+      help: "watch / youtu.be / embed / shorts link",
+    },
+    {
+      name: "brandColor",
+      label: "Brand colour",
+      kind: "text",
+      help: "6-digit hex, e.g. #1a2b3c (leave blank to use the default)",
+    },
+    {
+      name: "logoMediaId",
+      label: "Brand logo",
+      kind: "media",
+      uploadField: "logo",
+      help: "Transparent PNG, up to 1024×1024",
     },
     { name: "introduction", label: "Introduction", kind: "richtext" },
     { name: "text", label: "Text", kind: "richtext" },
@@ -76,16 +101,29 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
     { name: "addressLines", label: "Address lines", kind: "stringList" },
   ],
   insight: [
+    { name: "tags", label: "Tags", kind: "stringList" },
     { name: "title", label: "Title", kind: "text", required: true },
     { name: "excerpt", label: "Excerpt", kind: "richtext" },
     { name: "body", label: "Body", kind: "richtext", required: true },
     { name: "coverMediaId", label: "Cover image", kind: "media" },
+    {
+      name: "youtube",
+      label: "YouTube video (URL)",
+      kind: "url",
+      help: "watch / youtu.be / embed / shorts link",
+    },
     { name: "publishedDate", label: "Published date", kind: "date" },
   ],
   page_5h: [
     { name: "title", label: "Title", kind: "text", required: true },
     { name: "intro", label: "Intro", kind: "richtext" },
     { name: "elements", label: "Elements [ {key,title,description} ]", kind: "json" },
+    {
+      name: "youtube",
+      label: "YouTube video (URL)",
+      kind: "url",
+      help: "watch / youtu.be / embed / shorts link",
+    },
     { name: "ctaLabel", label: "CTA label", kind: "text" },
     { name: "ctaHref", label: "CTA href", kind: "text" },
   ],
@@ -93,6 +131,12 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
     { name: "title", label: "Title", kind: "text", required: true },
     { name: "description", label: "Description", kind: "richtext", required: true },
     { name: "coverMediaId", label: "Cover image", kind: "media" },
+    {
+      name: "youtube",
+      label: "YouTube video (URL)",
+      kind: "url",
+      help: "watch / youtu.be / embed / shorts link",
+    },
     { name: "purchaseUrl", label: "Purchase URL", kind: "url", required: true },
   ],
   page_awards: [

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { youtubeField } from "./youtube";
 
 /** Canonical content types (mirror db enum contentTypeEnum). */
 export const CONTENT_TYPES = [
@@ -29,19 +30,47 @@ const optionalEmail = z.preprocess(
   z.email().optional(),
 );
 
+/**
+ * Structured tag list (FR-817). Trims each tag, drops blanks, de-duplicates, and
+ * defaults to an empty array — so the read API's tag filter always gets clean,
+ * consistent values regardless of how the author entered them.
+ */
+const tagsField = z.preprocess(
+  (v) =>
+    Array.isArray(v)
+      ? [...new Set(v.map((t) => String(t).trim()).filter(Boolean))]
+      : v,
+  z.array(z.string()).default([]),
+);
+
+/** Brand colour as a 6-digit hex string (FR-804). Blank input = not provided. */
+const brandColorField = z.preprocess(
+  (v) => (v === "" ? undefined : v),
+  z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/, "Must be a 6-digit hex colour like #1a2b3c")
+    .optional(),
+);
+
 // ---------------------------------------------------------------------------
 // Per-type field schemas (validate content_entries.data). Required fields are
 // enforced here and checked at publish time (FR-006/FR-007).
 // ---------------------------------------------------------------------------
 
 export const caseSchema = z.object({
-  tags: z.array(z.string()).default([]),
+  tags: tagsField,
   title: z.string().min(1),
   quote: z.string().default(""),
   quoter: z.string().default(""),
   mutedVideoUrl: optionalUrl,
   introduction: z.string().default(""),
   text: z.string().default(""),
+  // Branding (FR-804/805/806): brand colour + transparent-PNG logo. Both optional
+  // — the site has a fallback and only builds the branded card when present.
+  brandColor: brandColorField,
+  logoMediaId: z.uuid().optional(),
+  // External YouTube reference (FR-801/802/803).
+  youtube: youtubeField,
 });
 
 export const solutionSchema = z.object({
@@ -73,11 +102,13 @@ export const regionSchema = z.object({
 });
 
 export const insightSchema = z.object({
+  tags: tagsField,
   title: z.string().min(1),
   excerpt: z.string().default(""),
   body: z.string().min(1),
   coverMediaId: z.uuid().optional(),
   publishedDate: z.string().optional(),
+  youtube: youtubeField,
 });
 
 export const page5hSchema = z.object({
@@ -94,6 +125,7 @@ export const page5hSchema = z.object({
     .default([]),
   ctaLabel: z.string().optional(),
   ctaHref: z.string().optional(),
+  youtube: youtubeField,
 });
 
 export const pageBookSchema = z.object({
@@ -101,6 +133,7 @@ export const pageBookSchema = z.object({
   description: z.string().min(1),
   coverMediaId: z.uuid().optional(),
   purchaseUrl: z.url(),
+  youtube: youtubeField,
 });
 
 export const pageAwardsSchema = z.object({
@@ -137,6 +170,7 @@ export interface ContentTypeDef {
     title: string;
     summary?: string;
     coverMediaId?: string;
+    tags?: string[];
   };
 }
 
@@ -151,6 +185,9 @@ function titleSummary(data: Record<string, unknown>) {
           : undefined,
     coverMediaId:
       typeof data.coverMediaId === "string" ? data.coverMediaId : undefined,
+    // Surface tags on list items so the site can filter/badge without a detail
+    // fetch. Only case/insight carry them; other types simply omit the field.
+    tags: Array.isArray(data.tags) ? (data.tags as string[]) : undefined,
   };
 }
 

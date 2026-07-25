@@ -5,3 +5,4 @@ export * from "./media";
 export * from "./audit";
 export * from "./webhooks";
 export * from "./locales";
+export * from "./leads";

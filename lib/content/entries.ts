@@ -37,6 +37,7 @@ function collectMediaIds(
   push(data.coverMediaId);
   push(data.photoMediaId);
   push(data.bannerMediaId);
+  push(data.logoMediaId);
   if (type === "page_awards" && Array.isArray(data.items)) {
     for (const it of data.items as Array<Record<string, unknown>>)
       push(it.logoMediaId);

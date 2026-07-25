@@ -19,12 +19,15 @@ export default function MediaPicker({
   onChange,
   labelledBy,
   describedBy,
+  uploadField,
   disabled,
 }: {
   value?: string;
   onChange: (id: string | undefined) => void;
   labelledBy?: string;
   describedBy?: string;
+  /** Upload policy key sent as `field` (e.g. "logo") for stricter validation. */
+  uploadField?: string;
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -61,6 +64,7 @@ export default function MediaPicker({
     try {
       const form = new FormData();
       form.append("file", file);
+      if (uploadField) form.append("field", uploadField);
       const res = await fetch("/api/media", { method: "POST", body: form });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {

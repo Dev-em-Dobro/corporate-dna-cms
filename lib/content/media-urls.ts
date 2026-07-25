@@ -33,6 +33,7 @@ export function collectDataMediaIds(data: Record<string, unknown>): string[] {
   if (typeof data.coverMediaId === "string") ids.push(data.coverMediaId);
   if (typeof data.bannerMediaId === "string") ids.push(data.bannerMediaId);
   if (typeof data.photoMediaId === "string") ids.push(data.photoMediaId);
+  if (typeof data.logoMediaId === "string") ids.push(data.logoMediaId);
   if (Array.isArray(data.items)) {
     for (const it of data.items as Array<Record<string, unknown>>) {
       if (it && typeof it.logoMediaId === "string") ids.push(it.logoMediaId);
@@ -97,6 +98,10 @@ export function attachDataMediaUrls(
   if (typeof data.photoMediaId === "string") {
     const url = urls.get(data.photoMediaId);
     if (url) out.photoUrl = url;
+  }
+  if (typeof data.logoMediaId === "string") {
+    const url = urls.get(data.logoMediaId);
+    if (url) out.logoUrl = url;
   }
   if (Array.isArray(data.items)) {
     out.items = (data.items as Array<Record<string, unknown>>).map((it) => {

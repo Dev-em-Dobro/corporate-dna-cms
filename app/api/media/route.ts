@@ -5,7 +5,9 @@ import { db } from "@/db";
 import { mediaAssets } from "@/db/schema";
 import { requireSession } from "@/lib/auth/guards";
 import { validateUpload } from "@/lib/media/validate";
-import { processImage } from "@/lib/media/image";
+import { getImagePolicy, checkImagePolicy } from "@/lib/media/policies";
+import { readImageFacts } from "@/lib/media/image-facts";
+import { processImage, type ProcessedUpload } from "@/lib/media/image";
 import { uploadToBunny } from "@/lib/media/bunny";
 import { writeAudit } from "@/lib/audit/log";
 import { jsonOk, jsonError, jsonValidationError, handleError } from "@/lib/http";
@@ -42,14 +44,35 @@ export async function POST(req: NextRequest) {
     if (!check.ok) return jsonValidationError({ file: check.error });
 
     const altText = (form.get("altText") as string | null) ?? null;
+    // Optional per-field policy (e.g. field=logo → transparent PNG). When absent,
+    // behaviour is unchanged: baseline validation + WebP re-encode.
+    const policy = getImagePolicy(form.get("field") as string | null);
     const originalExt = file.name.includes(".")
       ? file.name.split(".").pop()!
       : "bin";
     const base = slugify(file.name.replace(/\.[^.]+$/, "")) || "file";
 
-    // Images are recompressed to WebP; other files pass through untouched.
     const rawBytes = new Uint8Array(await file.arrayBuffer());
-    const processed = await processImage(rawBytes, file.type, originalExt);
+
+    let processed: ProcessedUpload;
+    if (policy) {
+      const facts = await readImageFacts(rawBytes, file.type);
+      const pc = checkImagePolicy(facts, policy);
+      if (!pc.ok) return jsonValidationError({ file: pc.error });
+      // preserveFormat keeps a transparent PNG as-is; otherwise re-encode to WebP.
+      processed = policy.preserveFormat
+        ? {
+            bytes: rawBytes,
+            mimeType: file.type,
+            ext: originalExt,
+            width: facts.width ?? null,
+            height: facts.height ?? null,
+          }
+        : await processImage(rawBytes, file.type, originalExt);
+    } else {
+      // Images are recompressed to WebP; other files pass through untouched.
+      processed = await processImage(rawBytes, file.type, originalExt);
+    }
 
     const path = `uploads/${randomUUID()}-${base}.${processed.ext}`;
     const { deliveryUrl, bunnyPath } = await uploadToBunny(
