@@ -41,7 +41,7 @@ function toListItem(type: ContentType, e: typeof contentEntries.$inferSelect) {
     slug: e.slug,
     locale: e.locale,
     publishedAt: e.publishedAt,
-    ...defForType(type).toListItem(e.data),
+    ...defForType(type).toListItem(e.publishedData ?? e.data),
   };
 }
 
@@ -52,6 +52,7 @@ function toListItem(type: ContentType, e: typeof contentEntries.$inferSelect) {
  */
 export async function serializeEntry(
   entry: typeof contentEntries.$inferSelect,
+  data: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
   let facets: Record<string, string[]> | undefined;
   if (entry.type === "case") {
@@ -68,8 +69,8 @@ export async function serializeEntry(
       };
   }
 
-  const urls = await resolveMediaUrls(collectDataMediaIds(entry.data));
-  const withUrls = attachDataMediaUrls(entry.data, urls);
+  const urls = await resolveMediaUrls(collectDataMediaIds(data));
+  const withUrls = attachDataMediaUrls(data, urls);
 
   return {
     id: entry.id,
@@ -220,6 +221,6 @@ export async function getPublished(
 
   // Tell the consumer whether it received the requested locale or the EN
   // fallback (FR-809/810), so the site can flag machine-untranslated content.
-  const serialized = await serializeEntry(entry);
+  const serialized = await serializeEntry(entry, entry.publishedData ?? entry.data);
   return { ...serialized, requestedLocale: locale, localeFallback };
 }
