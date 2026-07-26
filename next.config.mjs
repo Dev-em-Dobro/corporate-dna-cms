@@ -9,6 +9,12 @@ const securityHeaders = [
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), geolocation=()",
   },
+  // The CMS is a private admin tool — keep it out of every search index. This
+  // HTTP header covers non-HTML routes too and, unlike a robots.txt Disallow,
+  // still lets crawlers fetch the page and SEE the noindex (a Disallow would
+  // hide it, leaving a stale URL-only listing). Pairs with the `robots` meta in
+  // app/layout.tsx.
+  { key: "X-Robots-Tag", value: "noindex, nofollow" },
 ];
 
 const nextConfig = {
