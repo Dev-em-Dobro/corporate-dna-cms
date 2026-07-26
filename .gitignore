@@ -48,3 +48,7 @@ supabase/.temp/
 supabase/.branches/
 .env*
 backup/
+
+# local content source dumps (seeded into the DB via scripts/seed-*.ts)
+/cases/
+/solutions/
