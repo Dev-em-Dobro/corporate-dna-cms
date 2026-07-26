@@ -58,6 +58,42 @@ describe("rich-text sanitisation", () => {
     );
     expect(out).not.toContain("onerror");
   });
+
+  it("keeps a YouTube video iframe, rewritten to a canonical nocookie embed", () => {
+    // Quill emits the watch/embed URL of whatever host; we canonicalise it.
+    const out = sanitizeRichHtml(
+      '<iframe class="ql-video" frameborder="0" allowfullscreen="true"' +
+        ' src="https://www.youtube.com/embed/dQw4w9WgXcQ?showinfo=0"></iframe>',
+    );
+    expect(out).toContain(
+      'src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"',
+    );
+    expect(out).toContain("<iframe");
+  });
+
+  it("drops iframes whose src is not a YouTube video", () => {
+    for (const src of [
+      "https://evil.example.com/x",
+      "https://www.youtube.com/", // a YouTube host, but not a video
+      "javascript:alert(1)",
+    ]) {
+      const out = sanitizeRichHtml(`<iframe src="${src}"></iframe>`);
+      expect(out, src).not.toContain("<iframe");
+    }
+  });
+
+  it("does not let a video iframe smuggle extra attributes", () => {
+    const out = sanitizeRichHtml(
+      '<iframe src="https://youtu.be/dQw4w9WgXcQ"' +
+        ' onload="steal()" srcdoc="<script>x</script>" sandbox=""></iframe>',
+    );
+    expect(out).not.toContain("onload");
+    expect(out).not.toContain("srcdoc");
+    expect(out).not.toContain("sandbox");
+    expect(out).toContain(
+      'src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"',
+    );
+  });
 });
 
 describe("richTextFields", () => {

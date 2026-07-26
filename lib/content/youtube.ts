@@ -63,6 +63,22 @@ export function normalizeYouTube(input: string): YouTubeRef | null {
   };
 }
 
+/**
+ * Canonical privacy-preserving embed URL for a YouTube link, or `null` when the
+ * input is not a valid YouTube video URL.
+ *
+ * Used in two places that must agree: the rich-text editor inserts this as an
+ * `<iframe>` src, and the server sanitiser rewrites any inline video iframe to
+ * exactly this shape (see `lib/content/sanitize.ts`). `youtube-nocookie.com`
+ * avoids setting tracking cookies until the viewer actually plays the video.
+ */
+export function youtubeEmbedUrl(input: string): string | null {
+  const ref = normalizeYouTube(input);
+  return ref
+    ? `https://www.youtube-nocookie.com/embed/${ref.videoId}`
+    : null;
+}
+
 /** Zod shape of an already-normalised reference (for the re-validation pass). */
 const youtubeRefSchema = z.object({
   provider: z.literal("youtube"),
