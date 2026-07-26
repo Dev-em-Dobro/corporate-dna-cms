@@ -30,7 +30,7 @@ export async function GET(req: NextRequest, ctx: Ctx) {
     const entry = await getEntry(type, id);
     if (!entry) return jsonError(404, "Not found");
 
-    return jsonOk(await serializeEntry(entry));
+    return jsonOk(await serializeEntry(entry, entry.data));
   } catch (e) {
     return handleError(e);
   }

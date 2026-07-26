@@ -4,6 +4,7 @@ import {
   text,
   jsonb,
   integer,
+  boolean,
   timestamp,
   index,
   uniqueIndex,
@@ -37,6 +38,15 @@ export const contentEntries = pgTable(
       .notNull()
       .$type<Record<string, unknown>>()
       .default(sql`'{}'::jsonb`),
+    // Frozen public snapshot. NULL until first publish. The public read API
+    // serves THIS, not `data`, so editing a published entry never changes the
+    // live site until the author re-publishes.
+    publishedData: jsonb("published_data").$type<Record<string, unknown>>(),
+    // True when `data` (working copy) has edits not yet copied into
+    // `publishedData`. Drives the "Publish changes" button and the badge.
+    hasUnpublishedChanges: boolean("has_unpublished_changes")
+      .notNull()
+      .default(false),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     createdBy: uuid("created_by").references(() => profiles.id, { onDelete: "set null" }),

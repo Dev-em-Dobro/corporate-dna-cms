@@ -216,17 +216,15 @@ export async function updateEntry(
         currentVersionId: version.id,
         updatedBy: input.actorId,
         updatedAt: new Date(),
+        // Edits to a published entry are staged, not live: flag them so the UI
+        // shows "Publish changes". Drafts stay as they are.
+        ...(current.status === "published"
+          ? { hasUnpublishedChanges: true }
+          : {}),
       })
       .where(eq(contentEntries.id, id))
       .returning();
 
-    if (type === "case") {
-      const facets = extractCaseFacets(data);
-      await tx
-        .insert(caseStudyFacets)
-        .values({ entryId: id, ...facets })
-        .onConflictDoUpdate({ target: caseStudyFacets.entryId, set: facets });
-    }
     return updated;
   });
 
@@ -262,16 +260,31 @@ export async function publishEntry(
   }
 
   const now = new Date();
-  const [updated] = await db
-    .update(contentEntries)
-    .set({
-      status: "published",
-      publishedAt: entry.publishedAt ?? now,
-      updatedBy: actorId,
-      updatedAt: now,
-    })
-    .where(eq(contentEntries.id, id))
-    .returning();
+  const updated = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .update(contentEntries)
+      .set({
+        status: "published",
+        publishedData: entry.data, // freeze the working copy as the public snapshot
+        hasUnpublishedChanges: false,
+        publishedAt: entry.publishedAt ?? now,
+        updatedBy: actorId,
+        updatedAt: now,
+      })
+      .where(eq(contentEntries.id, id))
+      .returning();
+
+    // Case facets are the PUBLISHED facets: refresh them from the snapshot here
+    // (updateEntry/restoreVersion no longer touch them).
+    if (type === "case") {
+      const facets = extractCaseFacets(entry.data);
+      await tx
+        .insert(caseStudyFacets)
+        .values({ entryId: id, ...facets })
+        .onConflictDoUpdate({ target: caseStudyFacets.entryId, set: facets });
+    }
+    return row;
+  });
 
   await writeAudit({
     actorId,
@@ -301,7 +314,12 @@ export async function unpublishEntry(
   const now = new Date();
   const [updated] = await db
     .update(contentEntries)
-    .set({ status: "draft", updatedBy: actorId, updatedAt: now })
+    .set({
+      status: "draft",
+      hasUnpublishedChanges: false,
+      updatedBy: actorId,
+      updatedAt: now,
+    })
     .where(eq(contentEntries.id, id))
     .returning();
 
@@ -538,17 +556,13 @@ export async function restoreVersion(
         currentVersionId: newVersion.id,
         updatedBy: actorId,
         updatedAt: new Date(),
+        ...(current.status === "published"
+          ? { hasUnpublishedChanges: true }
+          : {}),
       })
       .where(eq(contentEntries.id, id))
       .returning();
 
-    if (type === "case") {
-      const facets = extractCaseFacets(ver.data);
-      await tx
-        .insert(caseStudyFacets)
-        .values({ entryId: id, ...facets })
-        .onConflictDoUpdate({ target: caseStudyFacets.entryId, set: facets });
-    }
     return updated;
   });
 

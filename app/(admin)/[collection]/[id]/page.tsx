@@ -44,9 +44,10 @@ export default async function EditEntry({
           data: entry.data,
           currentVersionId: entry.currentVersionId,
           status: entry.status,
+          hasUnpublishedChanges: entry.hasUnpublishedChanges,
         }}
         label={defForType(type).label}
-        canPreview={type !== "person"}
+        canPreview={type !== "person" && type !== "region"}
       />
     </>
   );
