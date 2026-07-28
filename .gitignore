@@ -52,3 +52,6 @@ backup/
 # local content source dumps (seeded into the DB via scripts/seed-*.ts)
 /cases/
 /solutions/
+/people.txt
+/correcoes
+/mudanças-v1

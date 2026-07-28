@@ -103,6 +103,7 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
   insight: [
     { name: "tags", label: "Tags", kind: "stringList" },
     { name: "title", label: "Title", kind: "text", required: true },
+    { name: "author", label: "Author", kind: "text", help: "Shown as “By …” on the insight" },
     { name: "excerpt", label: "Excerpt", kind: "richtext" },
     { name: "body", label: "Body", kind: "richtext", required: true },
     { name: "coverMediaId", label: "Cover image", kind: "media" },

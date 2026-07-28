@@ -104,6 +104,7 @@ export const regionSchema = z.object({
 export const insightSchema = z.object({
   tags: tagsField,
   title: z.string().min(1),
+  author: z.string().default(""),
   excerpt: z.string().default(""),
   body: z.string().min(1),
   coverMediaId: z.uuid().optional(),
