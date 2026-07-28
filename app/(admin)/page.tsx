@@ -18,8 +18,20 @@ async function countByType(type: ContentType, status?: "draft" | "published") {
   return rows[0]?.n ?? 0;
 }
 
+// Cards shown on the dashboard home, in display order. Excludes the 5H
+// Framework and Book pages, which are edited from their own screens.
+const DASHBOARD_TYPES: ContentType[] = [
+  "case",
+  "solution",
+  "person",
+  "region",
+  "insight",
+  "page_awards",
+  "page_legal",
+];
+
 export default async function Dashboard() {
-  const types = Object.values(REGISTRY);
+  const types = DASHBOARD_TYPES.map((t) => REGISTRY[t]);
   const stats = await Promise.all(
     types.map(async (t) => ({
       def: t,
