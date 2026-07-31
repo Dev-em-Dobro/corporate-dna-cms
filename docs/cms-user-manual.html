@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Corporate DNA CMS — User Manual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand:#d84339;
+    --brand-dark:#b5342b;
+    --brand-darker:#94291f;
+    --ink:#373234;
+    --muted:#6b6b6b;
+    --paper:#f3f3f3;
+    --line:#ece9e6;
+    --line-strong:#d6d1cc;
+    --danger:#b5342b;
+    --danger-surface:#fdf1f0;
+    --success:#1f6f43;
+    --success-surface:#eef7f1;
+  }
+
+  @page{
+    size: A4;
+    margin: 18mm 16mm 18mm 16mm;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  body{
+    font-family:'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    color:var(--ink);
+    font-size:10.5pt;
+    line-height:1.6;
+    margin:0;
+    background:#fff;
+  }
+
+  /* ---------- Brand wordmark ---------- */
+  .wordmark{
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.28em;
+    color:var(--brand-dark);
+    font-size:9pt;
+  }
+  .wordmark .dot{ color:var(--brand); }
+
+  /* ---------- Cover ---------- */
+  .cover{
+    height:261mm; /* fill the page area */
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    page-break-after:always;
+    position:relative;
+  }
+  .cover-top{ padding-top:6mm; }
+  .cover-bar{
+    height:8px; width:120px;
+    background:var(--brand);
+    border-radius:99px;
+    margin-top:14mm;
+  }
+  .cover-mid{ margin-top:auto; margin-bottom:auto; }
+  .cover h1{
+    font-size:40pt;
+    line-height:1.08;
+    font-weight:700;
+    color:var(--ink);
+    margin:0 0 6mm 0;
+    letter-spacing:-.01em;
+    border:none;
+    padding:0;
+  }
+  .cover h1 .accent{ color:var(--brand-dark); }
+  .cover .subtitle{
+    font-size:14pt;
+    color:var(--muted);
+    font-weight:400;
+    max-width:150mm;
+    margin:0;
+  }
+  .cover .roles{
+    margin-top:12mm;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .pill{
+    display:inline-block;
+    padding:6px 16px;
+    border-radius:99px;
+    font-size:9.5pt;
+    font-weight:600;
+    letter-spacing:.02em;
+  }
+  .pill-editor{ background:var(--paper); color:var(--ink); border:1px solid var(--line-strong); }
+  .pill-admin{ background:var(--brand-dark); color:#fff; }
+  .cover-foot{
+    border-top:1px solid var(--line-strong);
+    padding-top:5mm;
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    color:var(--muted);
+    font-size:9pt;
+  }
+
+  /* ---------- Sections ---------- */
+  section{ page-break-before: always; }
+  section:first-of-type{ page-break-before: auto; }
+
+  h1.sec{
+    font-size:19pt;
+    font-weight:700;
+    color:var(--ink);
+    margin:0 0 5mm 0;
+    padding-bottom:3mm;
+    border-bottom:3px solid var(--brand);
+    letter-spacing:-.01em;
+  }
+  h1.sec .num{
+    color:var(--brand-dark);
+    font-weight:700;
+    margin-right:.4em;
+  }
+  h2{
+    font-size:13pt;
+    font-weight:600;
+    color:var(--brand-darker);
+    margin:8mm 0 3mm 0;
+  }
+  h3{
+    font-size:11pt;
+    font-weight:600;
+    color:var(--ink);
+    margin:6mm 0 2mm 0;
+  }
+  p{ margin:0 0 3mm 0; }
+  a{ color:var(--brand-dark); text-decoration:none; }
+  strong{ font-weight:600; color:var(--ink); }
+  em{ color:var(--muted); }
+  ul,ol{ margin:0 0 3mm 0; padding-left:6mm; }
+  li{ margin:1mm 0; }
+
+  code{
+    font-family:'JetBrains Mono', ui-monospace, monospace;
+    font-size:9pt;
+    background:var(--paper);
+    border:1px solid var(--line-strong);
+    border-radius:4px;
+    padding:1px 5px;
+    color:var(--brand-darker);
+  }
+  pre{
+    font-family:'JetBrains Mono', ui-monospace, monospace;
+    font-size:8.5pt;
+    background:#2b2726;
+    color:#f3efe9;
+    border-radius:8px;
+    padding:4mm 5mm;
+    overflow:auto;
+    line-height:1.5;
+    margin:0 0 3mm 0;
+  }
+  pre code{ background:none; border:none; color:inherit; padding:0; }
+
+  /* ---------- Tables ---------- */
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin:2mm 0 5mm 0;
+    font-size:9.5pt;
+    page-break-inside:avoid;
+  }
+  thead th{
+    background:var(--brand-dark);
+    color:#fff;
+    text-align:left;
+    font-weight:600;
+    padding:2.4mm 3mm;
+    border:1px solid var(--brand-dark);
+  }
+  tbody td, tbody th{
+    padding:2.2mm 3mm;
+    border:1px solid var(--line-strong);
+    vertical-align:top;
+    text-align:left;
+    font-weight:400;
+  }
+  tbody tr:nth-child(even){ background:var(--paper); }
+  td.center, th.center{ text-align:center; }
+
+  /* ---------- Callouts ---------- */
+  .callout{
+    border-radius:8px;
+    padding:3.5mm 4mm 3.5mm 11mm;
+    margin:3mm 0 4mm 0;
+    position:relative;
+    font-size:9.8pt;
+    page-break-inside:avoid;
+  }
+  .callout::before{
+    position:absolute;
+    left:3.5mm; top:3.2mm;
+    font-size:12pt;
+  }
+  .callout p:last-child{ margin-bottom:0; }
+  .tip{ background:var(--success-surface); border:1px solid #cfe6d8; }
+  .tip::before{ content:"💡"; }
+  .warn{ background:var(--danger-surface); border:1px solid #f3cfcc; }
+  .warn::before{ content:"⚠️"; }
+  .admin{ background:#fbeeed; border:1px solid #f0cfcc; border-left:4px solid var(--brand); }
+  .admin::before{ content:"🔑"; }
+  .note{ background:var(--paper); border:1px solid var(--line-strong); }
+  .note::before{ content:"📌"; }
+
+  /* ---------- Screenshot figure ---------- */
+  .shot{
+    margin:3mm 0 4mm 0;
+    text-align:center;
+    page-break-inside:avoid;
+  }
+  .shot img{
+    display:block;
+    max-width:100%;
+    margin:0 auto 2mm auto;
+    border:1px solid var(--line-strong);
+    border-radius:8px;
+    box-shadow:0 2px 8px rgba(55,50,52,.08);
+  }
+  .shot .cap{ color:var(--muted); font-size:9pt; margin:0; max-width:150mm; margin-inline:auto; }
+  .shot .cap b{ color:var(--ink); }
+
+  /* ---------- Admin badge inline ---------- */
+  .adminflag{
+    display:inline-block;
+    background:var(--brand-dark);
+    color:#fff;
+    font-size:7.5pt;
+    font-weight:600;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    padding:2px 8px;
+    border-radius:99px;
+    vertical-align:middle;
+    margin-left:6px;
+  }
+
+  /* ---------- TOC ---------- */
+  .toc{ columns:2; column-gap:12mm; font-size:10pt; }
+  .toc ol{ list-style:none; padding:0; margin:0; }
+  .toc li{
+    margin:0 0 1.6mm 0;
+    break-inside:avoid;
+    color:var(--ink);
+  }
+  .toc li .n{
+    color:var(--brand-dark);
+    font-weight:600;
+    display:inline-block;
+    width:6mm;
+  }
+
+  /* ---------- Intro block on cover-back ---------- */
+  .lead{
+    font-size:11.5pt;
+    color:var(--muted);
+  }
+  .divider{ height:1px; background:var(--line-strong); border:none; margin:6mm 0; }
+
+  .cheat li{ margin:1.6mm 0; }
+  .end{
+    margin-top:6mm;
+    padding:4mm;
+    background:var(--paper);
+    border-radius:8px;
+    border-left:4px solid var(--brand);
+    color:var(--ink);
+    font-size:10pt;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================ COVER ============================ -->
+<div class="cover">
+  <div class="cover-top">
+    <span class="wordmark">Corporate DNA<span class="dot"> ●</span></span>
+    <div class="cover-bar"></div>
+  </div>
+
+  <div class="cover-mid">
+    <h1>CMS<br><span class="accent">User Manual</span></h1>
+    <p class="subtitle">A step-by-step guide to running the Corporate DNA website content — written for everyone, no technical background needed.</p>
+    <div class="roles">
+      <span class="pill pill-editor">For Editors</span>
+      <span class="pill pill-admin">For Admins</span>
+    </div>
+  </div>
+
+  <div class="cover-foot">
+    <span>Complete edition · Editor &amp; Admin</span>
+    <span class="wordmark" style="font-size:8pt;">Corporate DNA</span>
+  </div>
+</div>
+
+<!-- ============================ WELCOME + TOC ============================ -->
+<section style="page-break-before:auto;">
+  <h1 class="sec">Welcome</h1>
+  <p class="lead">This manual teaches you how to run the Corporate DNA website content on your own, without a developer. It covers <strong>everything both roles do</strong>:</p>
+  <ul>
+    <li><strong>Editors</strong> — create and publish content (cases, solutions, people, insights, and more).</li>
+    <li><strong>Admins</strong> — everything an editor does, <strong>plus</strong> manage users, languages, and the audit log.</li>
+  </ul>
+  <p>Sections that only admins can use are marked <span class="adminflag">🔑 Admin only</span>. If you are an editor, you can skip those — you will not see those screens.</p>
+
+  <div class="callout note">
+    <p><strong>How to read this manual.</strong> Follow it in order the first time. After that, use the contents below to jump to what you need. Every screen appears as a <strong>screenshot placeholder</strong> — a dashed red box with a precise caption telling a teammate exactly what to capture and paste in its place.</p>
+  </div>
+
+  <div class="shot">
+    <img src="manual-images/1.png" alt="Corporate DNA CMS overview">
+    <p class="cap"><b>Optional:</b> the Dashboard or a friendly product shot, to open the manual with a visual.</p>
+  </div>
+
+  <h2>Table of contents</h2>
+  <div class="toc">
+    <ol>
+      <li><span class="n">1</span>Before you start: key ideas</li>
+      <li><span class="n">2</span>Signing in</li>
+      <li><span class="n">3</span>Your first sign-in (new accounts)</li>
+      <li><span class="n">4</span>If you get locked out</li>
+      <li><span class="n">5</span>Getting around the CMS</li>
+      <li><span class="n">6</span>The content types, explained</li>
+      <li><span class="n">7</span>The core workflow</li>
+      <li><span class="n">8</span>Understanding every field type</li>
+      <li><span class="n">9</span>Writing with the rich-text editor</li>
+      <li><span class="n">10</span>Working with images &amp; files</li>
+      <li><span class="n">11</span>Version history: undo &amp; restore</li>
+      <li><span class="n">12</span>Deleting content</li>
+      <li><span class="n">13</span>Field reference per type</li>
+      <li><span class="n">14</span>Ordering People</li>
+      <li><span class="n">15</span>Legal pages</li>
+      <li><span class="n">16</span>Working in more than one language</li>
+      <li><span class="n">17</span>Contacts: the contact-form inbox</li>
+      <li><span class="n">18</span>🔑 Managing users</li>
+      <li><span class="n">19</span>🔑 The audit log</li>
+      <li><span class="n">20</span>🔑 Managing languages</li>
+      <li><span class="n">21</span>Troubleshooting &amp; FAQ</li>
+      <li><span class="n">22</span>Golden rules cheat sheet</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============================ 1 ============================ -->
+<section>
+  <h1 class="sec"><span class="num">1</span>Before you start: key ideas in plain language</h1>
+  <p>Read this once. These five ideas make everything else obvious.</p>
+  <table>
+    <thead><tr><th style="width:34%">Idea</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Draft vs. Published</strong></td><td>A <strong>draft</strong> is your private work-in-progress — nobody visiting the public site can see it. When you <strong>publish</strong>, it goes live. You can always return to a draft by <strong>unpublishing</strong>.</td></tr>
+      <tr><td><strong>Two roles</strong></td><td><strong>Editor</strong> = writes and publishes content. <strong>Admin</strong> = everything an editor does, plus manages accounts and settings.</td></tr>
+      <tr><td><strong>Two-step login (MFA)</strong></td><td>Every sign-in needs your password <strong>and</strong> a 6-digit code from an app on your phone. Required for everyone — it keeps the site safe.</td></tr>
+      <tr><td><strong>Everything is versioned</strong></td><td>Every save is kept in history. Made a mistake? <strong>Restore</strong> an older version. Nothing is ever truly lost.</td></tr>
+      <tr><td><strong>The site updates itself</strong></td><td>When you publish, the public website refreshes on its own within moments. You never need to "push" anything.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================ 2 ============================ -->
+<section>
+  <h1 class="sec"><span class="num">2</span>Signing in</h1>
+  <p>Once your account exists (see Section 3 if this is your first time), signing in takes two quick steps.</p>
+
+  <h3>Step 1 — Email and password</h3>
+  <ol>
+    <li>Open the CMS address in your browser (your admin gives you the link).</li>
+    <li>Type your <strong>Email</strong> and <strong>Password</strong>.</li>
+    <li>Click <strong>Continue</strong>.</li>
+  </ol>
+  <div class="shot">
+    <img src="manual-images/2.png" alt="CMS sign in — email and password">
+    <p class="cap">The <b>“CMS sign in”</b> screen: Email field, Password field, the <b>Continue</b> button, and the “Forgot your password?” link below it.</p>
+  </div>
+
+  <h3>Step 2 — Your 6-digit code</h3>
+  <ol start="4">
+    <li>The screen now asks for a <strong>Verification code</strong>.</li>
+    <li>Open your authenticator app (Google Authenticator, 1Password, Microsoft Authenticator…) and read the current 6-digit code for “Corporate DNA”.</li>
+    <li>Type the 6 digits and click <strong>Verify</strong>.</li>
+  </ol>
+  <div class="shot">
+    <img src="manual-images/3.png" alt="CMS sign in — 6-digit verification code">
+    <p class="cap">The verification screen with the “Enter the 6-digit code from your authenticator app” hint, the code box, and the <b>Verify</b> button.</p>
+  </div>
+  <p>You are now on the <strong>Dashboard</strong>. 🎉</p>
+
+  <div class="callout warn">
+    <p><strong>Codes are shared across your whole office network.</strong> There is a limit of <strong>15 code attempts per hour for the entire network</strong>, not per person. If you see a “rate-limited” message, <strong>wait</strong> — retrying makes it worse for everyone.</p>
+  </div>
+</section>
+
+<!-- ============================ 3 ============================ -->
+<section>
+  <h1 class="sec"><span class="num">3</span>Your first sign-in (new accounts)</h1>
+  <p>New accounts are <strong>never</strong> created by handing someone a password. An admin sends you an <strong>email invitation</strong>, and you set up everything yourself. No one — not even an admin — ever sees your password or your codes.</p>
+
+  <h3>A. Open the invitation email</h3>
+  <p>Find the invitation email and click its link.</p>
+  <div class="shot"><img src="manual-images/4.png" alt="Invitation email"><p class="cap">The invitation email with the “accept invite / set password” button highlighted.</p></div>
+
+  <h3>B. Choose your own password</h3>
+  <p>Pick a strong password and confirm it. This becomes yours alone.</p>
+  <div class="shot"><img src="manual-images/5.png" alt="Set your password screen"><p class="cap">The “set your password” screen.</p></div>
+
+  <h3>C. Set up your authenticator app (one-time)</h3>
+  <ol>
+    <li>You land on <strong>“Set up your second factor”</strong>. A <strong>QR code</strong> appears.</li>
+    <li>In your authenticator app choose “add / scan” and point the camera at the QR code.
+      <br><em>Can't scan?</em> Click <strong>“Can't scan? Enter a key instead”</strong> and type the setup key into your app by hand.</li>
+    <li>Your app now shows a 6-digit code. Type it into <strong>Verification code</strong>.</li>
+    <li>Click <strong>Finish setup</strong>.</li>
+  </ol>
+  <div class="shot"><img src="manual-images/6.png" alt="Set up your second factor — QR code enrolment"><p class="cap">The “Set up your second factor” screen: the QR code, the “Can't scan? Enter a key instead” link, the code box, and the <b>Finish setup</b> button.</p></div>
+
+  <div class="callout tip"><p>Until you finish this one-time setup, the CMS stays locked. That's normal and by design. Future sign-ins only need your password + a fresh code.</p></div>
+</section>
+
+<!-- ============================ 4 ============================ -->
+<section>
+  <h1 class="sec"><span class="num">4</span>If you get locked out</h1>
+  <table>
+    <thead><tr><th style="width:38%">Problem</th><th>What to do</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Forgot your password</strong></td><td>On the sign-in screen click <strong>“Forgot your password?”</strong>. A reset link arrives by email; it works once then expires. You'll <strong>still need your 6-digit code</strong> — a reset never skips the second step.</td></tr>
+      <tr><td><strong>Lost or replaced your phone</strong></td><td>Ask an <strong>admin</strong> to <strong>Reset</strong> your second factor (Section 18). Your next sign-in walks you through scanning a fresh QR code.</td></tr>
+      <tr><td><strong>“Rate-limited” message</strong></td><td>Too many code attempts across the office network. <strong>Wait</strong> (up to an hour) instead of retrying.</td></tr>
+      <tr><td><strong>Your account was disabled</strong></td><td>An admin turned your account off. Contact an admin to re-enable it.</td></tr>
+    </tbody>
+  </table>
+  <div class="shot"><img src="manual-images/7.png" alt="Password recovery screen"><p class="cap">The password-recovery screen reached from the “Forgot your password?” link.</p></div>
+</section>
+
+<!-- ============================ 5 ============================ -->
+<section>
+  <h1 class="sec"><span class="num">5</span>Getting around the CMS</h1>
+  <p>Every screen has the same <strong>left-hand menu</strong>. Your email shows in it, so you always know which account you're using.</p>
+  <table>
+    <thead><tr><th>Menu item</th><th>What's inside</th><th style="width:22%">Who sees it</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Dashboard</strong></td><td>Home screen with a card per content type.</td><td>Everyone</td></tr>
+      <tr><td><strong>Case studies</strong></td><td>Client success stories.</td><td>Everyone</td></tr>
+      <tr><td><strong>Solutions</strong></td><td>Your service / solution pages.</td><td>Everyone</td></tr>
+      <tr><td><strong>People</strong></td><td>Team member profiles.</td><td>Everyone</td></tr>
+      <tr><td><strong>Regions</strong></td><td>The regions shown on the home-page world map.</td><td>Everyone</td></tr>
+      <tr><td><strong>Insights</strong></td><td>Articles / blog posts.</td><td>Everyone</td></tr>
+      <tr><td><strong>Legal pages</strong></td><td>Privacy, Cookies, Terms.</td><td>Everyone</td></tr>
+      <tr><td><strong>Media</strong></td><td>Library of uploaded images and files.</td><td>Everyone</td></tr>
+      <tr><td><strong>Contacts</strong></td><td>Messages sent through the site's contact form.</td><td>Everyone</td></tr>
+      <tr><td><strong>Languages</strong></td><td>Add and manage site languages.</td><td><strong>🔑 Admin only</strong></td></tr>
+      <tr><td><strong>Users &amp; audit</strong></td><td>Manage accounts and view the activity log.</td><td><strong>🔑 Admin only</strong></td></tr>
+    </tbody>
+  </table>
+  <div class="shot"><img src="manual-images/8.png" alt="CMS left navigation menu"><p class="cap">The full left navigation menu — ideally as an <b>admin</b> so Languages and Users &amp; audit are visible — with your email shown.</p></div>
+  <p>The <strong>Dashboard</strong> shows a card for each main content type. Click any card to jump into that type's list.</p>
+  <div class="shot"><img src="manual-images/9.png" alt="Dashboard grid of content cards"><p class="cap">The Dashboard grid of content cards (Case studies, Solutions, People, Regions, Insights, Legal pages).</p></div>
+</section>
+
+<!-- ============================ 6 ============================ -->
+<section>
+  <h1 class="sec"><span class="num">6</span>The content types, explained</h1>
+  <p>There are two shapes of content.</p>
+  <h2>Collections — you can have <em>many</em> of these</h2>
+  <ul>
+    <li><strong>Case studies</strong> — a client challenge, your approach, the result, a quote, cover/brand imagery, and optional video. Cases also carry <strong>facets</strong> (industry / service / region / outcome) that power the filterable library on the site.</li>
+    <li><strong>Solutions</strong> — the services you offer.</li>
+    <li><strong>People</strong> — team profiles (name, role, bio, photo, social links). These can be <strong>re-ordered by hand</strong>.</li>
+    <li><strong>Regions</strong> — the regions that appear on the interactive <strong>world map on the home page</strong> (this is <em>not</em> the site's “Offices” section).</li>
+    <li><strong>Insights</strong> — articles / blog posts, with author, cover image, and an optional YouTube video.</li>
+  </ul>
+  <h2>Single pages (singletons) — exactly <em>one</em> of each</h2>
+  <ul>
+    <li>The <strong>Legal pages</strong>: <strong>Privacy</strong>, <strong>Cookies</strong>, and <strong>Terms</strong>.</li>
+    <li>You edit the single entry — you never create new ones — and you reach them from <strong>Legal pages</strong> in the menu.</li>
+  </ul>
+</section>
+
+<!-- ============================ 7 ============================ -->
+<section>
+  <h1 class="sec"><span class="num">7</span>The core workflow: create, save, preview, publish</h1>
+  <div class="callout note"><p><strong>This one workflow is the same for every content type.</strong> Learn it once and you can edit anything.</p></div>
+
+  <h3>Step 1 — Open a type and start a new entry</h3>
+  <ol>
+    <li>Click the type in the left menu (e.g. <strong>Insights</strong>).</li>
+    <li>You'll see a list of existing entries. Click <strong>New</strong> (top right). If the list is empty, a <strong>New</strong> button sits in the middle under “Nothing here yet”.</li>
+  </ol>
+  <div class="shot"><img src="manual-images/10.png" alt="Content list view with New button"><p class="cap">An Insights (or Case studies) list showing the columns <b>Title · Languages · Updated · Actions</b> and the <b>New</b> button top-right.</p></div>
+
+  <h3>Step 2 — (If multiple languages exist) choose a language</h3>
+  <p>On a brand-new entry a <strong>Language</strong> dropdown may appear at the top. Pick the language you're writing in (usually the default). You only see this when more than one language is set up.</p>
+
+  <h3>Step 3 — Fill in the fields</h3>
+  <p>Fill in the fields. Required fields are marked with a red asterisk <strong style="color:var(--danger)">*</strong>. A <strong>status badge</strong> near the title shows <strong>Draft</strong> or <strong>Published</strong>, and “<strong>Unsaved changes</strong>” appears while you type.</p>
+  <div class="shot"><img src="manual-images/11.png" alt="Content edit screen"><p class="cap">A content edit screen: the title heading, the status badge, several fields (including a required one with a red *), and the sticky bottom action bar with <b>Save draft</b> and <b>Publish</b>.</p></div>
+  <div class="callout tip"><p><strong>Auto-save.</strong> The CMS quietly saves your draft about <strong>10 seconds</strong> after you stop typing, and whenever you click out of a field. Still click <strong>Save draft</strong> yourself before leaving, just to be safe.</p></div>
+
+  <h3>Step 4 — Save your draft</h3>
+  <p>Click <strong>Save draft</strong> (bottom bar). This stores your work. <strong>It is not on the public website yet</strong> — it's private. If anything required is missing, a red summary lists what to fix, with links straight to each field.</p>
+
+  <h3>Step 5 — Preview (see it before it's live)</h3>
+  <p>Click <strong>Preview</strong> (top right). A new tab shows the entry <strong>exactly as it will appear on the website</strong>, including your unpublished draft. The link is private. <em>Note:</em> some types (People, Regions) have no standalone page, so Preview won't appear for them.</p>
+
+  <h3>Step 6 — Publish (make it live)</h3>
+  <p>When you're happy, click <strong>Publish</strong>. Your content goes live within moments. Publishing is <strong>blocked</strong> if a required field is empty or a chosen image was deleted — the error names exactly what to fix (e.g. <em>“Can't publish. Please fix: Title, Body.”</em>).</p>
+
+  <h2>After publishing: making further edits</h2>
+  <p>Once something is published and you edit it again:</p>
+  <ul>
+    <li>You'll see an <strong>⚠ Unpublished changes</strong> badge and a note: <em>“the site still shows the last published version.”</em></li>
+    <li>Your edits are saved privately as a draft. When ready, click <strong>Publish changes</strong> to push them live.</li>
+    <li>A green <strong>● Live</strong> badge means what you see is exactly what the public sees.</li>
+  </ul>
+  <p>To take something <strong>offline</strong>, click <strong>Unpublish</strong> — it returns to draft and disappears from the public site (kept, not deleted).</p>
+  <div class="shot"><img src="manual-images/12.png" alt="Publish states action bar"><p class="cap">The bottom action bar of a published entry with pending edits — the <b>⚠ Unpublished changes</b> badge, <b>Save draft</b>, <b>Publish changes</b> and <b>Unpublish</b> buttons, plus the amber “You have unpublished changes…” note.</p></div>
+</section>
+
+<!-- ============================ 8 ============================ -->
+<section>
+  <h1 class="sec"><span class="num">8</span>Understanding every field type</h1>
+  <p>The edit form is built from a handful of field types. Here's how to use each one.</p>
+  <table>
+    <thead><tr><th style="width:22%">Field type</th><th style="width:26%">Looks like</th><th>How to use it</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Text</strong></td><td>A single-line box.</td><td>Type a short line (a title, a name, a role).</td></tr>
+      <tr><td><strong>Text area</strong></td><td>A bigger multi-line box.</td><td>Type a longer plain paragraph (e.g. a quote).</td></tr>
+      <tr><td><strong>Rich text</strong></td><td>A box with a formatting toolbar.</td><td>Format text, add lists, links, images and YouTube videos (Section 9).</td></tr>
+      <tr><td><strong>URL</strong></td><td>A single-line box.</td><td>Paste a full web address, e.g. <code>https://…</code></td></tr>
+      <tr><td><strong>Email</strong></td><td>A single-line box.</td><td>Type an email address.</td></tr>
+      <tr><td><strong>Date</strong></td><td>A date picker.</td><td>Click and choose a date from the calendar.</td></tr>
+      <tr><td><strong>Media</strong></td><td>A thumbnail + <strong>Choose media</strong> button.</td><td>Pick or upload an image / file (Section 10).</td></tr>
+      <tr><td><strong>List</strong> (one per line)</td><td>A multi-line box.</td><td>Type <strong>one item per line</strong> (tags, address lines). Each line becomes a separate item.</td></tr>
+      <tr><td><strong>Facets</strong> (cases only)</td><td>Four small boxes: industry / service / region / outcome.</td><td>Type <strong>comma-separated</strong> values in each, e.g. <code>Finance, Retail</code>. They power the site's filters.</td></tr>
+    </tbody>
+  </table>
+  <div class="shot"><img src="manual-images/13.png" alt="Field types on a Case study edit screen"><p class="cap">A form area with a text field, a rich-text field, a media field, and the four facet boxes visible at once (a Case study edit screen works well).</p></div>
+</section>
+
+<!-- ============================ 9 ============================ -->
+<section>
+  <h1 class="sec"><span class="num">9</span>Writing with the rich-text editor</h1>
+  <p>Rich-text fields (a Case's <strong>Text</strong>, an Insight's <strong>Body</strong>, a Person's <strong>Bio</strong>) have a toolbar for formatting.</p>
+  <table>
+    <thead><tr><th style="width:34%">Button</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Heading</strong> (H2 / H3 / Normal)</td><td>Turn a line into a section heading, or back to normal text.</td></tr>
+      <tr><td><strong>Bold / Italic / Underline</strong></td><td>Emphasise selected text.</td></tr>
+      <tr><td><strong>Ordered / Bullet list</strong></td><td>Numbered or bulleted lists.</td></tr>
+      <tr><td><strong>Blockquote</strong></td><td>Indent a quotation.</td></tr>
+      <tr><td><strong>Link</strong></td><td>Turn selected text into a clickable link.</td></tr>
+      <tr><td><strong>Image</strong></td><td>Upload a picture <strong>into</strong> the text.</td></tr>
+      <tr><td><strong>Video</strong></td><td>Embed a <strong>YouTube</strong> video.</td></tr>
+      <tr><td><strong>Clean</strong></td><td>Remove formatting from the selected text.</td></tr>
+    </tbody>
+  </table>
+  <div class="shot"><img src="manual-images/14.png" alt="Rich-text editor with toolbar"><p class="cap">A rich-text field with its toolbar visible — ideally with a heading, a bullet list, and an embedded image inside the text area.</p></div>
+
+  <h3>Adding an image inside text</h3>
+  <ol><li>Click the <strong>image</strong> button in the toolbar.</li><li>Choose a file. It uploads automatically and appears in the text (never pasted raw).</li></ol>
+  <h3>Adding a YouTube video inside text</h3>
+  <ol><li>Click the <strong>video</strong> button.</li><li>Paste a <strong>YouTube</strong> URL when asked (watch, youtu.be, embed, or shorts all work).</li><li>Only YouTube links are accepted — anything else is rejected.</li></ol>
+  <h3>Removing an image or video</h3>
+  <p>Hover over the image/video inside the editor. A red <strong>×</strong> button appears in its corner — click it to remove that image or video.</p>
+  <div class="callout warn"><p><strong>Pasting always removes formatting.</strong> When you paste (from Word, a web page, an email…) it comes in as <strong>plain text</strong> with no colours, fonts, or hidden styles. This is intentional — it keeps the site consistent. Re-apply bold, headings, etc. with the toolbar afterwards.</p></div>
+</section>
+
+<!-- ============================ 10 ============================ -->
+<section>
+  <h1 class="sec"><span class="num">10</span>Working with images and files (Media)</h1>
+  <p>Every image on the site lives in the <strong>Media library</strong>. You can add images two ways.</p>
+
+  <h2>A) Straight from a field (most common)</h2>
+  <p>When a field is for an image (<strong>Cover image</strong>, <strong>Photo</strong>, <strong>Brand logo</strong>):</p>
+  <ol>
+    <li>Click <strong>Choose media</strong>.</li>
+    <li>A <strong>Media library</strong> window opens.</li>
+    <li>Click an existing image, <strong>or</strong> click <strong>Upload</strong> to add a new one from your computer.</li>
+    <li>The window closes and your image is attached. To swap it click <strong>Change</strong>; to remove it click <strong>Clear</strong>.</li>
+  </ol>
+  <div class="shot"><img src="manual-images/15.png" alt="Media library picker pop-up"><p class="cap">The “Media library” pop-up (opened from a <b>Choose media</b> button): the <b>Upload</b> button at the top and a grid of thumbnails, with one selected (highlighted border).</p></div>
+
+  <h2>B) From the Media menu (managing the whole library)</h2>
+  <ol>
+    <li>Click <strong>Upload</strong> (top right) to add a new file.</li>
+    <li>Each item shows its thumbnail, filename, and size. Click a thumbnail to open the full file.</li>
+    <li>Click <strong>Delete</strong> under an item to remove it.</li>
+  </ol>
+  <div class="shot"><img src="manual-images/16.png" alt="Media library page"><p class="cap">The Media page: the <b>Upload</b> button and the grid of files, each with filename, size, and a <b>Delete</b> button.</p></div>
+
+  <div class="callout warn"><p><strong>Deleting media is permanent.</strong> It removes the file for good. If any content still uses that image, it shows a <strong>broken image</strong>. Make sure nothing needs a file before deleting it.</p></div>
+  <p><strong>Rules to remember:</strong></p>
+  <ul>
+    <li><strong>Videos are not uploaded here.</strong> For video, paste a <strong>YouTube URL</strong> into the video field instead.</li>
+    <li>Some fields are stricter — a <strong>Brand logo</strong> must be a <strong>transparent PNG up to 1024×1024</strong>. Files that break a rule are rejected with a reason.</li>
+    <li>Always use a clear, descriptive filename — it helps everyone find images later.</li>
+  </ul>
+</section>
+
+<!-- ============================ 11 ============================ -->
+<section>
+  <h1 class="sec"><span class="num">11</span>Version history: undo and restore</h1>
+  <p>Every time you save, the CMS keeps a snapshot. You can go back to any earlier one.</p>
+  <ol>
+    <li>On an entry's edit screen, click <strong>Version history</strong> (top right).</li>
+    <li>A panel lists every version with its <strong>date</strong> and <strong>author</strong>.</li>
+    <li>Click <strong>Restore</strong> on any earlier version to bring its content back.</li>
+  </ol>
+  <div class="shot"><img src="manual-images/17.png" alt="Version history panel"><p class="cap">The Version history panel open over an edit screen, listing versions with dates/authors and a <b>Restore</b> button on each.</p></div>
+  <div class="callout tip"><p><strong>Restoring is safe.</strong> A restore is itself saved as a new version, so you never lose anything — you can even “undo the undo”. Any unsaved edits on screen are saved first before the restore, so nothing is thrown away.</p></div>
+</section>
+
+<!-- ============================ 12 ============================ -->
+<section>
+  <h1 class="sec"><span class="num">12</span>Deleting content</h1>
+  <ol>
+    <li>Go to the type's list.</li>
+    <li>In the <strong>Actions</strong> column of the row, click <strong>Delete</strong>.</li>
+    <li>A confirmation box explains what will happen. Confirm to proceed.</li>
+  </ol>
+  <div class="shot"><img src="manual-images/18.png" alt="Delete confirmation dialog"><p class="cap">The delete confirmation dialog (“Delete …? This removes the entry and all of its language versions from the site.”) with its <b>Delete</b> and cancel buttons.</p></div>
+  <div class="callout warn"><p><strong>Delete removes every language version</strong> of that entry from the site. To hide something temporarily, <strong>Unpublish</strong> it instead (Section 7) — that keeps it and lets you bring it back.</p></div>
+</section>
+
+<!-- ============================ 13 ============================ -->
+<section>
+  <h1 class="sec"><span class="num">13</span>Field reference for each content type</h1>
+  <p>A quick lookup. <strong>Required fields are marked ✅</strong> — the entry can't be published without them.</p>
+
+  <h2>Case studies</h2>
+  <table>
+    <thead><tr><th>Field</th><th style="width:20%">Type</th><th class="center" style="width:12%">Required</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Tags</td><td>List</td><td class="center"></td><td>Keywords for the case.</td></tr>
+      <tr><td>Page title</td><td>Text</td><td class="center">✅</td><td>The case title.</td></tr>
+      <tr><td>Quote</td><td>Text area</td><td class="center"></td><td>A client quote.</td></tr>
+      <tr><td>Quoter</td><td>Text</td><td class="center"></td><td>Who said the quote.</td></tr>
+      <tr><td>Interview video (URL)</td><td>URL</td><td class="center"></td><td>Autoplays without sound.</td></tr>
+      <tr><td>YouTube video (URL)</td><td>URL</td><td class="center"></td><td>watch / youtu.be / embed / shorts.</td></tr>
+      <tr><td>Brand colour</td><td>Text</td><td class="center"></td><td>6-digit hex, e.g. <code>#1a2b3c</code>. Blank = default.</td></tr>
+      <tr><td>Brand logo</td><td>Media</td><td class="center"></td><td>Transparent PNG, up to 1024×1024.</td></tr>
+      <tr><td>Introduction</td><td>Rich text</td><td class="center"></td><td></td></tr>
+      <tr><td>Text</td><td>Rich text</td><td class="center"></td><td>The main body.</td></tr>
+      <tr><td>Facets</td><td>Facets</td><td class="center"></td><td>industry / service / region / outcome — power the filters.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Solutions</h2>
+  <table>
+    <thead><tr><th>Field</th><th style="width:20%">Type</th><th class="center" style="width:12%">Required</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Title</td><td>Text</td><td class="center">✅</td><td></td></tr>
+      <tr><td>Banner background image</td><td>Media</td><td class="center"></td><td>Background image for the banner.</td></tr>
+      <tr><td>Problem statement</td><td>Rich text</td><td class="center">✅</td><td></td></tr>
+      <tr><td>Body</td><td>Rich text</td><td class="center"></td><td></td></tr>
+    </tbody>
+  </table>
+
+  <h2>People</h2>
+  <table>
+    <thead><tr><th>Field</th><th style="width:20%">Type</th><th class="center" style="width:12%">Required</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Name</td><td>Text</td><td class="center">✅</td><td></td></tr>
+      <tr><td>Role</td><td>Text</td><td class="center">✅</td><td>Job title.</td></tr>
+      <tr><td>Bio</td><td>Rich text</td><td class="center">✅</td><td></td></tr>
+      <tr><td>Photo</td><td>Media</td><td class="center"></td><td>Profile photo.</td></tr>
+      <tr><td>Region slug</td><td>Text</td><td class="center"></td><td>Links the person to a region.</td></tr>
+      <tr><td>LinkedIn / Instagram / Facebook / X</td><td>URL</td><td class="center"></td><td>Social profile links.</td></tr>
+      <tr><td>Email</td><td>Email</td><td class="center"></td><td></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Regions</h2>
+  <p style="font-size:9.5pt;color:var(--muted);margin-top:-1mm;">Each region is a point on the home-page world map — add one per region you want shown there.</p>
+  <table>
+    <thead><tr><th>Field</th><th style="width:20%">Type</th><th class="center" style="width:12%">Required</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Name</td><td>Text</td><td class="center">✅</td><td></td></tr>
+      <tr><td>City</td><td>Text</td><td class="center">✅</td><td></td></tr>
+      <tr><td>Country</td><td>Text</td><td class="center"></td><td></td></tr>
+      <tr><td>Summary</td><td>Rich text</td><td class="center"></td><td></td></tr>
+      <tr><td>Address lines</td><td>List</td><td class="center"></td><td>One address line per line.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Insights</h2>
+  <table>
+    <thead><tr><th>Field</th><th style="width:20%">Type</th><th class="center" style="width:12%">Required</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Tags</td><td>List</td><td class="center"></td><td></td></tr>
+      <tr><td>Title</td><td>Text</td><td class="center">✅</td><td></td></tr>
+      <tr><td>Author</td><td>Text</td><td class="center"></td><td>Shown as “By …” on the insight.</td></tr>
+      <tr><td>Excerpt</td><td>Rich text</td><td class="center"></td><td>Short summary.</td></tr>
+      <tr><td>Body</td><td>Rich text</td><td class="center">✅</td><td>The article.</td></tr>
+      <tr><td>Cover image</td><td>Media</td><td class="center"></td><td></td></tr>
+      <tr><td>YouTube video (URL)</td><td>URL</td><td class="center"></td><td></td></tr>
+      <tr><td>Published date</td><td>Date</td><td class="center"></td><td></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================ 14 ============================ -->
+<section>
+  <h1 class="sec"><span class="num">14</span>Ordering People (drag and drop)</h1>
+  <p>The <strong>People</strong> list is special: the order you set here is the order visitors see on the site.</p>
+  <ol>
+    <li>Open <strong>People</strong>.</li>
+    <li>Grab a row and <strong>drag it up or down</strong> to reorder.</li>
+    <li>The new order saves automatically.</li>
+  </ol>
+  <div class="shot"><img src="manual-images/19.png" alt="People drag-and-drop ordering"><p class="cap">The People list in its drag-and-drop form, ideally mid-drag with a row lifted.</p></div>
+</section>
+
+<!-- ============================ 15 · LEGAL PAGES ============================ -->
+<section>
+  <h1 class="sec"><span class="num">15</span>Legal pages</h1>
+  <p>The <strong>Legal pages</strong> are “single” pages — each exists only <strong>once</strong>, so you edit that one entry and never create new ones.</p>
+  <ol>
+    <li>Click <strong>Legal pages</strong> in the menu.</li>
+    <li>You'll see three cards: <strong>Privacy</strong>, <strong>Cookies</strong>, and <strong>Terms</strong>.</li>
+    <li>Click one to edit it. Each has a <strong>Title</strong> ✅ and a <strong>Body</strong> ✅ (rich text).</li>
+  </ol>
+  <p>They use the same <strong>Save draft → Preview → Publish</strong> workflow as everything else.</p>
+  <div class="shot"><img src="manual-images/20.png" alt="Legal pages screen"><p class="cap">The “Legal pages” screen with the Privacy, Cookies, and Terms cards.</p></div>
+</section>
+
+<!-- ============================ 16 ============================ -->
+<section>
+  <h1 class="sec"><span class="num">16</span>Working in more than one language</h1>
+  <p>The site can hold the same content in several languages. Each entry is one language; “translations” are linked copies in other languages.</p>
+  <h2>Where you see languages</h2>
+  <ul>
+    <li>In a <strong>list</strong>, the <strong>Languages</strong> column shows a chip per language with a <strong>Draft/Published</strong> badge. A dashed <strong>+ [Language]</strong> chip means that translation doesn't exist yet — click it to create it.</li>
+    <li>On an <strong>edit screen</strong>, a <strong>Languages</strong> bar at the top shows every language. The current one is marked <strong>(current)</strong>; click another to switch, or click a dashed language to create that translation.</li>
+  </ul>
+  <div class="shot"><img src="manual-images/21.png" alt="Languages bar on an edit screen"><p class="cap">An edit screen's top “Languages” bar: the current language marked “(current)”, one other existing language, and a dashed “+ language” chip to create a new translation.</p></div>
+  <h2>Creating a translation</h2>
+  <ol>
+    <li>Click the dashed <strong>+ [Language]</strong> chip (in the list or on the edit screen).</li>
+    <li>A new entry opens in that language, <strong>pre-filled from the source</strong> — you translate over the existing text.</li>
+    <li>Save, preview, and publish it just like any other entry.</li>
+  </ol>
+  <div class="callout tip"><p>If a language isn't offered, an admin needs to add it first — see Section 20.</p></div>
+</section>
+
+<!-- ============================ 17 · CONTACTS ============================ -->
+<section>
+  <h1 class="sec"><span class="num">17</span>Contacts: the contact-form inbox</h1>
+  <p>When someone fills in the <strong>contact form on the public marketing site</strong>, their message lands here. Everyone (editors and admins) can read these messages — think of it as a shared inbox.</p>
+  <ol>
+    <li>Click <strong>Contacts</strong> in the left menu.</li>
+    <li>You'll see a table of every submission, newest first, with a count of messages at the top.</li>
+  </ol>
+  <table>
+    <thead><tr><th>Column</th><th>What it shows</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Name</strong></td><td>Who sent the message.</td></tr>
+      <tr><td><strong>Email</strong></td><td>Their email — <strong>click it to reply</strong> straight from your email app.</td></tr>
+      <tr><td><strong>Organisation</strong></td><td>Their company, if they gave one (otherwise “—”).</td></tr>
+      <tr><td><strong>Received</strong></td><td>The date and time it arrived.</td></tr>
+    </tbody>
+  </table>
+  <div class="shot"><img src="manual-images/22.png" alt="Contacts inbox table"><p class="cap">The “Contacts” screen: the message count at the top and the table (Name · Email · Organisation · Received) with <b>View</b> and <b>Delete</b> buttons on each row.</p></div>
+
+  <h3>Reading a full message</h3>
+  <p>Click <strong>View</strong> on a row to expand it. You'll see the full <strong>Message</strong>, plus technical details: <strong>Source</strong>, <strong>Referer</strong>, and <strong>User agent</strong> (where the message came from). Click <strong>Hide</strong> to collapse it again.</p>
+  <div class="shot"><img src="manual-images/23.png" alt="Expanded contact submission"><p class="cap">A contact row expanded to show the full Message, Source, Referer, and User agent details.</p></div>
+
+  <h3>Replying and clearing messages</h3>
+  <ul>
+    <li><strong>To reply:</strong> click the person's <strong>email address</strong> — your email app opens with a new message to them. (Replies happen in your own email, not inside the CMS.)</li>
+    <li><strong>To clear one you've handled:</strong> click <strong>Delete</strong> and confirm.</li>
+  </ul>
+  <div class="callout warn"><p><strong>Delete is permanent.</strong> A deleted contact submission cannot be recovered. Only delete messages you've already dealt with.</p></div>
+  <div class="callout note"><p>Contacts are <strong>read-only records</strong> — you can't create or edit them here. You only read them, reply by email, and delete the ones you're done with. If the list is empty you'll see “No contact submissions yet.”</p></div>
+</section>
+
+<!-- ============================ 18 · USERS ============================ -->
+<section>
+  <h1 class="sec"><span class="num">18</span>Managing users <span class="adminflag">🔑 Admin only</span></h1>
+  <p>Only <strong>admins</strong> see <strong>Users &amp; audit</strong> in the menu. This is where you invite teammates and control access.</p>
+  <div class="shot"><img src="manual-images/24.png" alt="Users and audit screen"><p class="cap">The “Users &amp; audit” screen: the <b>Invite user</b> form at the top and the users table (Email · Role · Status · Second factor · Delete) below.</p></div>
+
+  <h2>Inviting a new user</h2>
+  <ol>
+    <li>In the <strong>Invite user</strong> box, type their <strong>Email</strong>.</li>
+    <li>Choose a <strong>Role</strong> — <strong>Editor</strong> or <strong>Admin</strong>.</li>
+    <li>Click <strong>Send invitation</strong>.</li>
+  </ol>
+  <p>They receive an email, set their <strong>own</strong> password, and set up their <strong>own</strong> authenticator app on first sign-in. <strong>You never handle their password or codes</strong> — there's nothing to send separately.</p>
+
+  <h2>Changing a user's role or access</h2>
+  <table>
+    <thead><tr><th style="width:26%">Column</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Role</strong></td><td>Switch between <strong>Editor</strong> and <strong>Admin</strong>. You'll confirm — admins can manage users and see the audit log.</td></tr>
+      <tr><td><strong>Status</strong></td><td><strong>Active</strong> (normal), <strong>Invited</strong> (hasn't finished setup), or <strong>Disabled</strong>. Disabling signs the person out and blocks sign-in until re-enabled.</td></tr>
+      <tr><td><strong>Second factor → Reset</strong></td><td>Use when someone loses their phone. Their old authenticator stops working immediately; they set up a new one on next sign-in.</td></tr>
+      <tr><td><strong>Delete</strong></td><td>Permanently removes the account. Their authored content and the audit trail are <strong>kept</strong>, with the author left blank.</td></tr>
+    </tbody>
+  </table>
+  <div class="shot"><img src="manual-images/25.png" alt="User row actions"><p class="cap">A close-up of one user row: the Role dropdown, Status dropdown, the <b>Reset</b> button, and the <b>Delete</b> button. Optionally include a confirmation dialog.</p></div>
+  <div class="callout admin"><p><strong>Safety rule you can't override:</strong> the system <strong>refuses</strong> to demote, disable, or delete the <strong>last active admin</strong>. This stops anyone locking the whole team out. <strong>Always keep at least two admins.</strong></p></div>
+</section>
+
+<!-- ============================ 19 · AUDIT ============================ -->
+<section>
+  <h1 class="sec"><span class="num">19</span>The audit log <span class="adminflag">🔑 Admin only</span></h1>
+  <p>At the bottom of <strong>Users &amp; audit</strong> is the <strong>Recent audit</strong> log — an automatic, permanent record of every important action (who did what, and when).</p>
+  <ol>
+    <li>Each line shows the <strong>time</strong>, the <strong>action</strong>, the <strong>target</strong>, and <strong>who</strong> did it.</li>
+    <li>Click a line to <strong>expand</strong> it and see full details.</li>
+    <li>Use <strong>Previous / Next</strong> to page through history.</li>
+  </ol>
+  <div class="shot"><img src="manual-images/26.png" alt="Recent audit log"><p class="cap">The “Recent audit” list with one entry expanded to show its When / Action / Actor / Target / Details, plus the Previous/Next pager.</p></div>
+  <div class="callout tip"><p>The audit log can't be edited or erased, and it survives even if a user is deleted (their email is kept as a snapshot). It answers “who changed this?” with certainty.</p></div>
+</section>
+
+<!-- ============================ 20 · LANGUAGES ============================ -->
+<section>
+  <h1 class="sec"><span class="num">20</span>Managing languages <span class="adminflag">🔑 Admin only</span></h1>
+  <p>Only admins see <strong>Languages</strong> in the menu. This controls which languages editors can write in.</p>
+  <div class="shot"><img src="manual-images/27.png" alt="Languages management screen"><p class="cap">The Languages screen: the <b>Add a language</b> form and the table (Code · Name · Default · Status · Actions).</p></div>
+  <h2>Adding a language</h2>
+  <ol>
+    <li>In <strong>Add a language</strong>, type a <strong>Code</strong> (e.g. <code>pt-BR</code>, <code>es</code>, <code>fr</code>) and a <strong>Name</strong> (e.g. <code>Português (Brasil)</code>).</li>
+    <li>Click <strong>Add language</strong>.</li>
+  </ol>
+  <h2>Managing existing languages</h2>
+  <table>
+    <thead><tr><th style="width:22%">Column</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Name</strong></td><td>Click the name to edit it, then click away to save the rename.</td></tr>
+      <tr><td><strong>Default</strong></td><td>The default is the fallback shown when a translation is missing. Click <strong>Set default</strong> on another language to change it (it must be enabled first).</td></tr>
+      <tr><td><strong>Status</strong></td><td>Click <strong>Enabled / Disabled</strong> to toggle. Disabled languages disappear from editors' choices but keep their content.</td></tr>
+      <tr><td><strong>Delete</strong></td><td>Removes a language from the registry. <strong>Only languages with no content can be deleted</strong> — otherwise <strong>disable</strong> it instead.</td></tr>
+    </tbody>
+  </table>
+  <div class="callout tip"><p>Adding or enabling a language makes it appear immediately for editors — no rebuild or developer needed.</p></div>
+</section>
+
+<!-- ============================ 21 · TROUBLESHOOTING ============================ -->
+<section>
+  <h1 class="sec"><span class="num">21</span>Troubleshooting &amp; FAQ</h1>
+
+  <p><strong>“I published but the website hasn't changed.”</strong><br>Give it a moment and refresh the public page. Publishing triggers an automatic update. If it still doesn't show after a few minutes, tell an admin (it may be a webhook/config issue, not something you did).</p>
+
+  <p><strong>“I can't publish — there's a red error.”</strong><br>A required field is empty, or an image you chose was deleted. The message names exactly what to fix. Correct those fields and click <strong>Publish</strong> again.</p>
+
+  <p><strong>“It says ‘Someone else saved this entry while you were editing.’”</strong><br>Two people edited the same entry at once. Reload to get their changes, then re-apply yours. To avoid this, coordinate who edits what.</p>
+
+  <p><strong>“My formatting disappeared when I pasted.”</strong><br>That's on purpose — pasting always drops formatting. Re-apply bold, headings, and lists with the toolbar.</p>
+
+  <p><strong>“The Preview button isn't there.”</strong><br>Some types (People, Regions) have no standalone public page, so there's nothing to preview.</p>
+
+  <p><strong>“I don't see Users &amp; audit or Languages.”</strong><br>Those are <strong>admin-only</strong>. If you need something there, ask an admin.</p>
+
+  <p><strong>“I lost my phone / can't get a code.”</strong><br>Ask an admin to <strong>Reset</strong> your second factor. You'll set up a new authenticator on next sign-in.</p>
+
+  <p><strong>“Rate-limited when entering my code.”</strong><br>The limit is shared across the office network (15 attempts/hour). Wait rather than retrying.</p>
+
+  <p><strong>“I deleted something by mistake.”</strong><br>For a whole entry: contact an admin — deletion is hard to reverse. For content <em>inside</em> an entry, use <strong>Version history → Restore</strong>. For media, a deleted file is gone; re-upload it.</p>
+</section>
+
+<!-- ============================ 22 · CHEAT SHEET ============================ -->
+<section>
+  <h1 class="sec"><span class="num">22</span>Golden rules — one-page cheat sheet</h1>
+  <ul class="cheat">
+    <li>🔑 <strong>Sign in = password + 6-digit code.</strong> Keep your authenticator app safe.</li>
+    <li>📝 <strong>Draft is private. Publish makes it live.</strong> Preview before you publish.</li>
+    <li>✅ <strong>Red * = required.</strong> You can't publish until required fields are filled.</li>
+    <li>🖼️ <strong>Add images via the field or Media library.</strong> Videos = paste a YouTube link, never upload.</li>
+    <li>🧹 <strong>Pasting removes formatting</strong> — re-apply it with the toolbar.</li>
+    <li>🕓 <strong>Every save is a version.</strong> Made a mistake? <strong>Version history → Restore.</strong></li>
+    <li>🗑️ <strong>Delete is forever and removes all languages.</strong> To hide temporarily, <strong>Unpublish</strong> instead.</li>
+    <li>🌍 <strong>Translations start pre-filled from the source</strong> — translate over the text.</li>
+    <li>👥 <strong>Admins:</strong> always keep <strong>at least two admins</strong>; the system won't let you remove the last one.</li>
+    <li>❓ <strong>Unsure?</strong> Preview first, and ask an admin before deleting anything.</li>
+  </ul>
+
+  <div class="end">
+    <strong>You're ready.</strong> Sign in, open a type, click <strong>New</strong>, and try the full <strong>Save draft → Preview → Publish</strong> loop on a test entry — it's the safest way to learn.
+  </div>
+
+  <hr class="divider">
+  <p style="text-align:center;"><span class="wordmark">Corporate DNA<span class="dot"> ●</span></span></p>
+  <p style="text-align:center; color:var(--muted); font-size:8.5pt;">CMS User Manual · Complete edition for Editors &amp; Admins</p>
+</section>
+
+</body>
+</html>
