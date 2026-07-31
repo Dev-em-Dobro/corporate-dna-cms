@@ -695,18 +695,12 @@ export default function ContentEditor({
         );
       case "stringList":
         return (
-          <textarea
-            {...a11y}
+          <StringListInput
+            a11y={a11y}
             className={`${textarea} ${ring}`}
-            rows={2}
-            placeholder="One per line"
-            value={(Array.isArray(val) ? (val as string[]) : []).join("\n")}
-            onChange={(e) =>
-              set(
-                f.name,
-                e.target.value.split("\n").map((s) => s.trim()).filter(Boolean),
-              )
-            }
+            value={Array.isArray(val) ? (val as string[]) : []}
+            onChange={(next) => set(f.name, next)}
+            resetKey={revision}
           />
         );
       case "facets":
@@ -753,6 +747,59 @@ export default function ContentEditor({
         );
     }
   }
+}
+
+/**
+ * A "one per line" list editor.
+ *
+ * The stored value is a clean `string[]` (trimmed, no blank entries), but the
+ * textarea is driven by its own raw-text state so typing behaves normally.
+ * Normalising on every keystroke and feeding the cleaned array back as the
+ * textarea value made spaces and line breaks impossible to type — a trailing
+ * space was trimmed away and a fresh blank line was filtered out the instant it
+ * was pressed. Local text preserves what you type; the parsed array is what we
+ * persist. It re-syncs from the source of truth only when `resetKey` changes
+ * (initial load / version restore), never on our own edits.
+ */
+function StringListInput({
+  a11y,
+  className,
+  value,
+  onChange,
+  resetKey,
+}: {
+  a11y: React.ComponentPropsWithoutRef<"textarea">;
+  className: string;
+  value: string[];
+  onChange: (v: string[]) => void;
+  resetKey: number;
+}) {
+  const [text, setText] = useState(() => value.join("\n"));
+
+  // Re-seed the text from the source of truth only when `resetKey` changes
+  // (initial load / version restore) — never on our own keystrokes, so a
+  // trailing space or a fresh blank line survives long enough to type. This is
+  // React's "adjust state during render" pattern; it avoids an effect (and the
+  // extra render it would cost) by reacting to the key change inline.
+  const [seenKey, setSeenKey] = useState(resetKey);
+  if (resetKey !== seenKey) {
+    setSeenKey(resetKey);
+    setText(value.join("\n"));
+  }
+
+  return (
+    <textarea
+      {...a11y}
+      className={className}
+      rows={2}
+      placeholder="One per line"
+      value={text}
+      onChange={(e) => {
+        setText(e.target.value);
+        onChange(e.target.value.split("\n").map((s) => s.trim()).filter(Boolean));
+      }}
+    />
+  );
 }
 
 const FACET_KEYS = ["industry", "service", "region", "outcome"] as const;
