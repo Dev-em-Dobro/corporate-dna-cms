@@ -121,6 +121,11 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
       help: "watch / youtu.be / embed / shorts link",
     },
     { name: "publishedDate", label: "Published date", kind: "date" },
+    { name: "originalSource", label: "Originally published on", kind: "text", help: "Source publication name" },
+    { name: "originalPublicationDate", label: "Original publication date", kind: "date" },
+    { name: "sourceLink", label: "Source link", kind: "url" },
+    { name: "authorApproved", label: "Author approved", kind: "boolean", help: "Until ticked, the byline shows as “Corporate DNA” on the site" },
+    { name: "attachmentMediaId", label: "Downloadable attachment (PDF)", kind: "media", help: "PDF / white paper offered for download" },
   ],
   page_5h: [
     { name: "title", label: "Title", kind: "text", required: true },

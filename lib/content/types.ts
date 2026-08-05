@@ -122,6 +122,15 @@ export const insightSchema = z.object({
   coverMediaId: z.uuid().optional(),
   publishedDate: z.string().optional(),
   youtube: youtubeField,
+  // Optional external-attribution fields (status review §10).
+  originalSource: z.string().default(""),
+  originalPublicationDate: z.string().optional(),
+  sourceLink: optionalUrl,
+  // Author-approval gate: the byline is masked to "Corporate DNA" on the public
+  // read API until this is true (see maskUnapprovedAuthor in published.ts, added later).
+  authorApproved: z.boolean().default(false),
+  // Downloadable file/report attachment (PDF etc.).
+  attachmentMediaId: z.uuid().optional(),
 });
 
 export const page5hSchema = z.object({
