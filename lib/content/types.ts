@@ -314,7 +314,9 @@ export const REGISTRY: Record<ContentType, ContentTypeDef> = {
     label: "Home statistics",
     singleton: true,
     schema: pageHomeSchema as unknown as z.ZodType<Record<string, unknown>>,
-    toListItem: titleSummary,
+    // Statistics singleton has no title/name field, so give it a fixed label
+    // instead of falling back to titleSummary's "Untitled".
+    toListItem: () => ({ title: "Home statistics" }),
   },
   resource: {
     type: "resource",
