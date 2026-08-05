@@ -160,6 +160,12 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
     { name: "title", label: "Title", kind: "text", required: true },
     { name: "body", label: "Body", kind: "richtext", required: true },
   ],
+  page_home: [
+    { name: "years", label: "Years", kind: "text", required: true, help: "e.g. 18" },
+    { name: "countries", label: "Countries", kind: "text", required: true, help: "e.g. 36" },
+    { name: "faculty", label: "Faculty", kind: "text", required: true, help: "e.g. 75" },
+    { name: "sponsoredPct", label: "Chairman/CXO-sponsored", kind: "text", required: true, help: "e.g. 90%" },
+  ],
 };
 
 export function emptyData(type: ContentType): Record<string, unknown> {

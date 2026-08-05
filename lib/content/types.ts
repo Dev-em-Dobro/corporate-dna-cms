@@ -12,6 +12,8 @@ export const CONTENT_TYPES = [
   "page_book",
   "page_awards",
   "page_legal",
+  "page_home",
+  "resource",
 ] as const;
 
 export type ContentType = (typeof CONTENT_TYPES)[number];
@@ -176,6 +178,13 @@ export const pageLegalSchema = z.object({
   body: z.string().min(1),
 });
 
+export const pageHomeSchema = z.object({
+  years: z.string().min(1),
+  countries: z.string().min(1),
+  faculty: z.string().min(1),
+  sponsoredPct: z.string().min(1),
+});
+
 // ---------------------------------------------------------------------------
 // Registry
 // ---------------------------------------------------------------------------
@@ -290,6 +299,13 @@ export const REGISTRY: Record<ContentType, ContentTypeDef> = {
     schema: pageLegalSchema as unknown as z.ZodType<Record<string, unknown>>,
     toListItem: titleSummary,
   },
+  page_home: {
+    type: "page_home",
+    label: "Home statistics",
+    singleton: true,
+    schema: pageHomeSchema as unknown as z.ZodType<Record<string, unknown>>,
+    toListItem: titleSummary,
+  },
 };
 
 /** Collection types exposed as plural segments in the API. */
@@ -310,6 +326,7 @@ export const SINGLETON_PAGES: Record<
   privacy: { type: "page_legal", slug: "privacy" },
   cookies: { type: "page_legal", slug: "cookies" },
   terms: { type: "page_legal", slug: "terms" },
+  home: { type: "page_home", slug: "home" },
 };
 
 export function defForType(type: ContentType): ContentTypeDef {
