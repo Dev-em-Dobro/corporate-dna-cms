@@ -185,6 +185,13 @@ export const pageHomeSchema = z.object({
   sponsoredPct: z.string().min(1),
 });
 
+export const resourceSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().default(""),
+  fileMediaId: z.uuid(),
+  coverMediaId: z.uuid().optional(),
+});
+
 // ---------------------------------------------------------------------------
 // Registry
 // ---------------------------------------------------------------------------
@@ -304,6 +311,14 @@ export const REGISTRY: Record<ContentType, ContentTypeDef> = {
     label: "Home statistics",
     singleton: true,
     schema: pageHomeSchema as unknown as z.ZodType<Record<string, unknown>>,
+    toListItem: titleSummary,
+  },
+  resource: {
+    type: "resource",
+    label: "Resource",
+    segment: "resources",
+    singleton: false,
+    schema: resourceSchema as unknown as z.ZodType<Record<string, unknown>>,
     toListItem: titleSummary,
   },
 };

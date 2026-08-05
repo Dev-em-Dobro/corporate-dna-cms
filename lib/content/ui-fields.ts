@@ -166,6 +166,12 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
     { name: "faculty", label: "Faculty", kind: "text", required: true, help: "e.g. 75" },
     { name: "sponsoredPct", label: "Chairman/CXO-sponsored", kind: "text", required: true, help: "e.g. 90%" },
   ],
+  resource: [
+    { name: "title", label: "Title", kind: "text", required: true },
+    { name: "description", label: "Description", kind: "richtext" },
+    { name: "fileMediaId", label: "File (PDF)", kind: "media", required: true, help: "PDF / white paper offered for download" },
+    { name: "coverMediaId", label: "Cover image", kind: "media" },
+  ],
 };
 
 export function emptyData(type: ContentType): Record<string, unknown> {
