@@ -34,6 +34,9 @@ export function collectDataMediaIds(data: Record<string, unknown>): string[] {
   if (typeof data.bannerMediaId === "string") ids.push(data.bannerMediaId);
   if (typeof data.photoMediaId === "string") ids.push(data.photoMediaId);
   if (typeof data.logoMediaId === "string") ids.push(data.logoMediaId);
+  if (typeof data.fileMediaId === "string") ids.push(data.fileMediaId);
+  if (typeof data.attachmentMediaId === "string")
+    ids.push(data.attachmentMediaId);
   if (Array.isArray(data.items)) {
     for (const it of data.items as Array<Record<string, unknown>>) {
       if (it && typeof it.logoMediaId === "string") ids.push(it.logoMediaId);
@@ -102,6 +105,14 @@ export function attachDataMediaUrls(
   if (typeof data.logoMediaId === "string") {
     const url = urls.get(data.logoMediaId);
     if (url) out.logoUrl = url;
+  }
+  if (typeof data.fileMediaId === "string") {
+    const url = urls.get(data.fileMediaId);
+    if (url) out.fileUrl = url;
+  }
+  if (typeof data.attachmentMediaId === "string") {
+    const url = urls.get(data.attachmentMediaId);
+    if (url) out.attachmentUrl = url;
   }
   if (Array.isArray(data.items)) {
     out.items = (data.items as Array<Record<string, unknown>>).map((it) => {

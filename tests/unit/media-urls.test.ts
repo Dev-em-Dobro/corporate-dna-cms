@@ -48,6 +48,11 @@ describe("collectDataMediaIds", () => {
     expect(collectDataMediaIds({ title: "x" })).toEqual([]);
     expect(collectDataMediaIds({ coverMediaId: 123 as unknown as string })).toEqual([]);
   });
+
+  it("collects the resource file and insight attachment ids", () => {
+    expect(collectDataMediaIds({ fileMediaId: "f1" })).toEqual(["f1"]);
+    expect(collectDataMediaIds({ attachmentMediaId: "a1" })).toEqual(["a1"]);
+  });
 });
 
 describe("attachListItemMediaUrl", () => {
@@ -99,5 +104,19 @@ describe("attachDataMediaUrls", () => {
     const out = attachDataMediaUrls({ coverMediaId: "miss", title: "x" }, urls);
     expect(out.coverUrl).toBeUndefined();
     expect(out.coverMediaId).toBe("miss");
+  });
+
+  it("adds fileUrl and attachmentUrl additively", () => {
+    const map = new Map([
+      ["f1", "https://cdn/f1.pdf"],
+      ["a1", "https://cdn/a1.pdf"],
+    ]);
+    const out = attachDataMediaUrls(
+      { fileMediaId: "f1", attachmentMediaId: "a1" },
+      map,
+    );
+    expect(out.fileMediaId).toBe("f1");
+    expect(out.fileUrl).toBe("https://cdn/f1.pdf");
+    expect(out.attachmentUrl).toBe("https://cdn/a1.pdf");
   });
 });
