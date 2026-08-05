@@ -85,7 +85,7 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
       name: "proofRefs",
       label: "Proof / testimonials [ {quote,author,role,caseSlug} ]",
       kind: "json",
-      help: "One block per quote. caseSlug is optional.",
+      help: "One block per quote. quote is required; author, role and caseSlug are optional.",
     },
   ],
   person: [
