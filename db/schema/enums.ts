@@ -19,6 +19,8 @@ export const contentTypeEnum = pgEnum("content_type", [
   "page_book",
   "page_awards",
   "page_legal",
+  "page_home",
+  "resource",
 ]);
 
 export const contentStatusEnum = pgEnum("content_status", [
