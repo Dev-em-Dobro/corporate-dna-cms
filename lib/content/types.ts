@@ -129,7 +129,7 @@ export const insightSchema = z.object({
   originalPublicationDate: z.string().optional(),
   sourceLink: optionalUrl,
   // Author-approval gate: the byline is masked to "Corporate DNA" on the public
-  // read API until this is true (see maskUnapprovedAuthor in published.ts, added later).
+  // read API until this is true (see maskUnapprovedAuthor in published.ts).
   authorApproved: z.boolean().default(false),
   // Downloadable file/report attachment (PDF etc.).
   attachmentMediaId: z.uuid().optional(),
