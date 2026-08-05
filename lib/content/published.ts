@@ -11,6 +11,23 @@ import {
 
 const DEFAULT_LOCALE = "en";
 
+/**
+ * Enforce the Insights author-approval gate (status review §10): a byline only
+ * appears publicly once approved. Until then the read API attributes the piece
+ * to "Corporate DNA", so no unapproved name (Rhea/Mike/…) leaks to the site.
+ * Applied on the PUBLISHED read path only — the token-gated preview keeps the
+ * real byline so editors can review it.
+ */
+export function maskUnapprovedAuthor(
+  type: ContentType,
+  data: Record<string, unknown>,
+): Record<string, unknown> {
+  if (type === "insight" && data.authorApproved !== true) {
+    return { ...data, author: "Corporate DNA" };
+  }
+  return data;
+}
+
 export interface ListParams {
   locale?: string;
   page?: number;
@@ -221,6 +238,10 @@ export async function getPublished(
 
   // Tell the consumer whether it received the requested locale or the EN
   // fallback (FR-809/810), so the site can flag machine-untranslated content.
-  const serialized = await serializeEntry(entry, entry.publishedData ?? entry.data);
+  const publishedData = maskUnapprovedAuthor(
+    entry.type,
+    entry.publishedData ?? entry.data,
+  );
+  const serialized = await serializeEntry(entry, publishedData);
   return { ...serialized, requestedLocale: locale, localeFallback };
 }

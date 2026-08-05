@@ -10,6 +10,7 @@ export type FieldKind =
   | "date"
   | "stringList"
   | "facets"
+  | "boolean"
   | "json";
 
 export interface FieldSpec {
@@ -80,6 +81,12 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
       required: true,
     },
     { name: "body", label: "Body", kind: "richtext" },
+    {
+      name: "proofRefs",
+      label: "Proof / testimonials [ {quote,author,role,caseSlug} ]",
+      kind: "json",
+      help: "One block per quote. caseSlug is optional.",
+    },
   ],
   person: [
     { name: "name", label: "Name", kind: "text", required: true },
@@ -114,6 +121,11 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
       help: "watch / youtu.be / embed / shorts link",
     },
     { name: "publishedDate", label: "Published date", kind: "date" },
+    { name: "originalSource", label: "Originally published on", kind: "text", help: "Source publication name" },
+    { name: "originalPublicationDate", label: "Original publication date", kind: "date" },
+    { name: "sourceLink", label: "Source link", kind: "url" },
+    { name: "authorApproved", label: "Author approved", kind: "boolean", help: "Until ticked, the byline shows as “Corporate DNA” on the site" },
+    { name: "attachmentMediaId", label: "Downloadable attachment (PDF)", kind: "media", help: "PDF / white paper offered for download" },
   ],
   page_5h: [
     { name: "title", label: "Title", kind: "text", required: true },
@@ -148,6 +160,18 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
     { name: "title", label: "Title", kind: "text", required: true },
     { name: "body", label: "Body", kind: "richtext", required: true },
   ],
+  page_home: [
+    { name: "years", label: "Years", kind: "text", required: true, help: "e.g. 18" },
+    { name: "countries", label: "Countries", kind: "text", required: true, help: "e.g. 36" },
+    { name: "faculty", label: "Faculty", kind: "text", required: true, help: "e.g. 75" },
+    { name: "sponsoredPct", label: "Chairman/CXO-sponsored", kind: "text", required: true, help: "e.g. 90%" },
+  ],
+  resource: [
+    { name: "title", label: "Title", kind: "text", required: true },
+    { name: "description", label: "Description", kind: "richtext" },
+    { name: "fileMediaId", label: "File (PDF)", kind: "media", required: true, help: "PDF / white paper offered for download" },
+    { name: "coverMediaId", label: "Cover image", kind: "media" },
+  ],
 };
 
 export function emptyData(type: ContentType): Record<string, unknown> {
@@ -159,6 +183,9 @@ export function emptyData(type: ContentType): Record<string, unknown> {
         break;
       case "facets":
         base[f.name] = { industry: [], service: [], region: [], outcome: [] };
+        break;
+      case "boolean":
+        base[f.name] = false;
         break;
       case "json":
         base[f.name] = [];

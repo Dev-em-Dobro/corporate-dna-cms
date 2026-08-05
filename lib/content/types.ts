@@ -12,6 +12,8 @@ export const CONTENT_TYPES = [
   "page_book",
   "page_awards",
   "page_legal",
+  "page_home",
+  "resource",
 ] as const;
 
 export type ContentType = (typeof CONTENT_TYPES)[number];
@@ -78,6 +80,18 @@ export const solutionSchema = z.object({
   bannerMediaId: z.uuid().optional(),
   problemStatement: z.string().min(1),
   body: z.string().default(""),
+  // Proof / testimonials rendered on the solution page. Free-form quote blocks;
+  // caseSlug optionally links a block to a case study.
+  proofRefs: z
+    .array(
+      z.object({
+        quote: z.string().min(1),
+        author: z.string().default(""),
+        role: z.string().default(""),
+        caseSlug: z.string().optional(),
+      }),
+    )
+    .default([]),
 });
 
 export const personSchema = z.object({
@@ -110,6 +124,15 @@ export const insightSchema = z.object({
   coverMediaId: z.uuid().optional(),
   publishedDate: z.string().optional(),
   youtube: youtubeField,
+  // Optional external-attribution fields (status review §10).
+  originalSource: z.string().default(""),
+  originalPublicationDate: z.string().optional(),
+  sourceLink: optionalUrl,
+  // Author-approval gate: the byline is masked to "Corporate DNA" on the public
+  // read API until this is true (see maskUnapprovedAuthor in published.ts).
+  authorApproved: z.boolean().default(false),
+  // Downloadable file/report attachment (PDF etc.).
+  attachmentMediaId: z.uuid().optional(),
 });
 
 export const page5hSchema = z.object({
@@ -155,6 +178,20 @@ export const pageLegalSchema = z.object({
   body: z.string().min(1),
 });
 
+export const pageHomeSchema = z.object({
+  years: z.string().min(1),
+  countries: z.string().min(1),
+  faculty: z.string().min(1),
+  sponsoredPct: z.string().min(1),
+});
+
+export const resourceSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().default(""),
+  fileMediaId: z.uuid(),
+  coverMediaId: z.uuid().optional(),
+});
+
 // ---------------------------------------------------------------------------
 // Registry
 // ---------------------------------------------------------------------------
@@ -175,6 +212,9 @@ export interface ContentTypeDef {
   };
 }
 
+// NOTE: do NOT add `author` to this projection. The byline-approval gate
+// (`maskUnapprovedAuthor` in lib/content/published.ts) only runs on the detail
+// path (`getPublished`). Exposing `author` here would leak unapproved bylines.
 function titleSummary(data: Record<string, unknown>) {
   return {
     title: String(data.title ?? data.name ?? "Untitled"),
@@ -269,6 +309,21 @@ export const REGISTRY: Record<ContentType, ContentTypeDef> = {
     schema: pageLegalSchema as unknown as z.ZodType<Record<string, unknown>>,
     toListItem: titleSummary,
   },
+  page_home: {
+    type: "page_home",
+    label: "Home statistics",
+    singleton: true,
+    schema: pageHomeSchema as unknown as z.ZodType<Record<string, unknown>>,
+    toListItem: titleSummary,
+  },
+  resource: {
+    type: "resource",
+    label: "Resource",
+    segment: "resources",
+    singleton: false,
+    schema: resourceSchema as unknown as z.ZodType<Record<string, unknown>>,
+    toListItem: titleSummary,
+  },
 };
 
 /** Collection types exposed as plural segments in the API. */
@@ -289,6 +344,7 @@ export const SINGLETON_PAGES: Record<
   privacy: { type: "page_legal", slug: "privacy" },
   cookies: { type: "page_legal", slug: "cookies" },
   terms: { type: "page_legal", slug: "terms" },
+  home: { type: "page_home", slug: "home" },
 };
 
 export function defForType(type: ContentType): ContentTypeDef {

@@ -713,6 +713,16 @@ export default function ContentEditor({
             disabled={locked}
           />
         );
+      case "boolean":
+        return (
+          <input
+            {...a11y}
+            type="checkbox"
+            className="h-4 w-4 rounded border-line-strong"
+            checked={Boolean(val)}
+            onChange={(e) => set(f.name, e.target.checked)}
+          />
+        );
       case "json":
         return (
           <textarea

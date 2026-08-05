@@ -27,13 +27,16 @@ export function assetDeliveryUrl(row: UrlRow): string | undefined {
   return undefined;
 }
 
-/** Media ids referenced by a content `data` payload (cover / photo / awards logos). */
+/** Media ids referenced by a content `data` payload (cover / banner / photo / logo / file / attachment and awards logos). */
 export function collectDataMediaIds(data: Record<string, unknown>): string[] {
   const ids: string[] = [];
   if (typeof data.coverMediaId === "string") ids.push(data.coverMediaId);
   if (typeof data.bannerMediaId === "string") ids.push(data.bannerMediaId);
   if (typeof data.photoMediaId === "string") ids.push(data.photoMediaId);
   if (typeof data.logoMediaId === "string") ids.push(data.logoMediaId);
+  if (typeof data.fileMediaId === "string") ids.push(data.fileMediaId);
+  if (typeof data.attachmentMediaId === "string")
+    ids.push(data.attachmentMediaId);
   if (Array.isArray(data.items)) {
     for (const it of data.items as Array<Record<string, unknown>>) {
       if (it && typeof it.logoMediaId === "string") ids.push(it.logoMediaId);
@@ -79,7 +82,8 @@ export function attachListItemMediaUrl<T extends { coverMediaId?: string }>(
 
 /**
  * Return a shallow copy of a content `data` payload with resolved URLs added
- * alongside their id fields: `coverUrl`, `photoUrl`, and `items[].logoUrl`.
+ * alongside their id fields: `coverUrl`, `bannerUrl`, `photoUrl`, `logoUrl`,
+ * `fileUrl`, `attachmentUrl`, and `items[].logoUrl`.
  */
 export function attachDataMediaUrls(
   data: Record<string, unknown>,
@@ -102,6 +106,14 @@ export function attachDataMediaUrls(
   if (typeof data.logoMediaId === "string") {
     const url = urls.get(data.logoMediaId);
     if (url) out.logoUrl = url;
+  }
+  if (typeof data.fileMediaId === "string") {
+    const url = urls.get(data.fileMediaId);
+    if (url) out.fileUrl = url;
+  }
+  if (typeof data.attachmentMediaId === "string") {
+    const url = urls.get(data.attachmentMediaId);
+    if (url) out.attachmentUrl = url;
   }
   if (Array.isArray(data.items)) {
     out.items = (data.items as Array<Record<string, unknown>>).map((it) => {
