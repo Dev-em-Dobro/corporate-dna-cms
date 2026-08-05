@@ -6,6 +6,11 @@
  * Usage: npx tsx scripts/seed-home.ts
  * Idempotent: skips if the `home` entry already exists.
  */
+// `export {}` marks this file as a module so its top-level consts/functions
+// don't share global scope with the other one-off scripts (tsc would otherwise
+// flag duplicate declarations like `main`).
+export {};
+
 try {
   process.loadEnvFile(".env.local");
 } catch {
