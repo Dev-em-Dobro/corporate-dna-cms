@@ -10,6 +10,7 @@ export type FieldKind =
   | "date"
   | "stringList"
   | "facets"
+  | "boolean"
   | "json";
 
 export interface FieldSpec {
@@ -159,6 +160,9 @@ export function emptyData(type: ContentType): Record<string, unknown> {
         break;
       case "facets":
         base[f.name] = { industry: [], service: [], region: [], outcome: [] };
+        break;
+      case "boolean":
+        base[f.name] = false;
         break;
       case "json":
         base[f.name] = [];
