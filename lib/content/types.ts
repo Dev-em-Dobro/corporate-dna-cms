@@ -212,6 +212,9 @@ export interface ContentTypeDef {
   };
 }
 
+// NOTE: do NOT add `author` to this projection. The byline-approval gate
+// (`maskUnapprovedAuthor` in lib/content/published.ts) only runs on the detail
+// path (`getPublished`). Exposing `author` here would leak unapproved bylines.
 function titleSummary(data: Record<string, unknown>) {
   return {
     title: String(data.title ?? data.name ?? "Untitled"),
