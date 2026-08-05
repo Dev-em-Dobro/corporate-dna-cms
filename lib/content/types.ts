@@ -78,6 +78,18 @@ export const solutionSchema = z.object({
   bannerMediaId: z.uuid().optional(),
   problemStatement: z.string().min(1),
   body: z.string().default(""),
+  // Proof / testimonials rendered on the solution page. Free-form quote blocks;
+  // caseSlug optionally links a block to a case study.
+  proofRefs: z
+    .array(
+      z.object({
+        quote: z.string().min(1),
+        author: z.string().default(""),
+        role: z.string().default(""),
+        caseSlug: z.string().optional(),
+      }),
+    )
+    .default([]),
 });
 
 export const personSchema = z.object({
