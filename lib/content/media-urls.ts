@@ -27,7 +27,7 @@ export function assetDeliveryUrl(row: UrlRow): string | undefined {
   return undefined;
 }
 
-/** Media ids referenced by a content `data` payload (cover / photo / awards logos). */
+/** Media ids referenced by a content `data` payload (cover / banner / photo / logo / file / attachment and awards logos). */
 export function collectDataMediaIds(data: Record<string, unknown>): string[] {
   const ids: string[] = [];
   if (typeof data.coverMediaId === "string") ids.push(data.coverMediaId);
@@ -82,7 +82,8 @@ export function attachListItemMediaUrl<T extends { coverMediaId?: string }>(
 
 /**
  * Return a shallow copy of a content `data` payload with resolved URLs added
- * alongside their id fields: `coverUrl`, `photoUrl`, and `items[].logoUrl`.
+ * alongside their id fields: `coverUrl`, `bannerUrl`, `photoUrl`, `logoUrl`,
+ * `fileUrl`, `attachmentUrl`, and `items[].logoUrl`.
  */
 export function attachDataMediaUrls(
   data: Record<string, unknown>,
