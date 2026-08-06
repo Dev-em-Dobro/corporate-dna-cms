@@ -11,7 +11,23 @@ export type FieldKind =
   | "stringList"
   | "facets"
   | "boolean"
-  | "json";
+  | "json"
+  | "objectList";
+
+/**
+ * A single sub-field inside an `objectList` row. Kept to the simple text-like
+ * kinds plus `media` (a file/image picker) — a repeatable group stays easy for
+ * non-technical editors, so no rich text or nested lists here.
+ */
+export interface SubFieldSpec {
+  name: string;
+  label: string;
+  kind: "text" | "textarea" | "url" | "media";
+  required?: boolean;
+  help?: string;
+  /** For `media` sub-fields: the upload policy key (see FieldSpec.uploadField). */
+  uploadField?: string;
+}
 
 export interface FieldSpec {
   name: string;
@@ -25,7 +41,40 @@ export interface FieldSpec {
    * e.g. `logo` enforces a transparent PNG within size/dimension limits.
    */
   uploadField?: string;
+  /**
+   * For `objectList` fields: the sub-fields shown per row. The stored value is
+   * an array of `{ [subField.name]: string }` objects — the same shape the
+   * server schema validates, just entered through separate labelled inputs
+   * instead of a raw JSON blob.
+   */
+  itemFields?: SubFieldSpec[];
+  /** For `objectList` fields: singular noun for the add/remove buttons, e.g. "quote". */
+  itemNoun?: string;
 }
+
+/**
+ * Downloadable resources embedded in a content entry (FR: resources live inside
+ * Client Impact / Solutions / Insights, not as a separate collection). One row
+ * per file: a display title plus the uploaded file. Shared verbatim across the
+ * three types so the stored shape and editor UI stay identical.
+ */
+const resourcesField: FieldSpec = {
+  name: "resources",
+  label: "Resources (downloads)",
+  kind: "objectList",
+  itemNoun: "resource",
+  help: "Optional files offered for download — one per file (e.g. PDF, white paper).",
+  itemFields: [
+    { name: "title", label: "Title", kind: "text", required: true },
+    {
+      name: "fileMediaId",
+      label: "File",
+      kind: "media",
+      required: true,
+      help: "PDF / document / image to offer for download",
+    },
+  ],
+};
 
 /**
  * UI field layout per content type. Complex/nested fields (elements, awards
@@ -65,6 +114,7 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
     },
     { name: "introduction", label: "Introduction", kind: "richtext" },
     { name: "text", label: "Text", kind: "richtext" },
+    resourcesField,
   ],
   solution: [
     { name: "title", label: "Title", kind: "text", required: true },
@@ -83,10 +133,23 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
     { name: "body", label: "Body", kind: "richtext" },
     {
       name: "proofRefs",
-      label: "Proof / testimonials [ {quote,author,role,caseSlug} ]",
-      kind: "json",
-      help: "One block per quote. quote is required; author, role and caseSlug are optional.",
+      label: "Proof / testimonials",
+      kind: "objectList",
+      itemNoun: "quote",
+      help: "One block per quote. All fields are optional.",
+      itemFields: [
+        { name: "quote", label: "Quote", kind: "textarea" },
+        { name: "author", label: "Author", kind: "text" },
+        { name: "role", label: "Role", kind: "text", help: "e.g. CEO, Head of HR" },
+        {
+          name: "caseSlug",
+          label: "Case study link (slug)",
+          kind: "text",
+          help: "Optional — slug of a case study to link this quote to",
+        },
+      ],
     },
+    resourcesField,
   ],
   person: [
     { name: "name", label: "Name", kind: "text", required: true },
@@ -125,7 +188,7 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
     { name: "originalPublicationDate", label: "Original publication date", kind: "date" },
     { name: "sourceLink", label: "Source link", kind: "url" },
     { name: "authorApproved", label: "Author approved", kind: "boolean", help: "Until ticked, the byline shows as “Corporate DNA” on the site" },
-    { name: "attachmentMediaId", label: "Downloadable attachment (PDF)", kind: "media", help: "PDF / white paper offered for download" },
+    resourcesField,
   ],
   page_5h: [
     { name: "title", label: "Title", kind: "text", required: true },
@@ -166,12 +229,6 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
     { name: "faculty", label: "Faculty", kind: "text", required: true, help: "e.g. 75" },
     { name: "sponsoredPct", label: "Chairman/CXO-sponsored", kind: "text", required: true, help: "e.g. 90%" },
   ],
-  resource: [
-    { name: "title", label: "Title", kind: "text", required: true },
-    { name: "description", label: "Description", kind: "richtext" },
-    { name: "fileMediaId", label: "File (PDF)", kind: "media", required: true, help: "PDF / white paper offered for download" },
-    { name: "coverMediaId", label: "Cover image", kind: "media" },
-  ],
 };
 
 export function emptyData(type: ContentType): Record<string, unknown> {
@@ -188,6 +245,9 @@ export function emptyData(type: ContentType): Record<string, unknown> {
         base[f.name] = false;
         break;
       case "json":
+        base[f.name] = [];
+        break;
+      case "objectList":
         base[f.name] = [];
         break;
       default:

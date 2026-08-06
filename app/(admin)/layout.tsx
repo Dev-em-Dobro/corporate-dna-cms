@@ -4,12 +4,11 @@ import AdminNav, { type NavItem } from "@/components/AdminNav";
 
 const NAV: (NavItem & { adminOnly?: boolean })[] = [
   { href: "/", label: "Dashboard" },
-  { href: "/cases", label: "Case studies" },
+  { href: "/cases", label: "Client Impact" },
   { href: "/solutions", label: "Solutions" },
   { href: "/people", label: "People" },
   { href: "/regions", label: "Regions" },
   { href: "/insights", label: "Insights" },
-  { href: "/resources", label: "Resources" },
   { href: "/pages", label: "Site pages" },
   { href: "/media", label: "Media" },
   { href: "/leads", label: "Contacts" },

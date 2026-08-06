@@ -42,6 +42,11 @@ export function collectDataMediaIds(data: Record<string, unknown>): string[] {
       if (it && typeof it.logoMediaId === "string") ids.push(it.logoMediaId);
     }
   }
+  if (Array.isArray(data.resources)) {
+    for (const r of data.resources as Array<Record<string, unknown>>) {
+      if (r && typeof r.fileMediaId === "string") ids.push(r.fileMediaId);
+    }
+  }
   return ids;
 }
 
@@ -83,7 +88,7 @@ export function attachListItemMediaUrl<T extends { coverMediaId?: string }>(
 /**
  * Return a shallow copy of a content `data` payload with resolved URLs added
  * alongside their id fields: `coverUrl`, `bannerUrl`, `photoUrl`, `logoUrl`,
- * `fileUrl`, `attachmentUrl`, and `items[].logoUrl`.
+ * `fileUrl`, `attachmentUrl`, `items[].logoUrl`, and `resources[].fileUrl`.
  */
 export function attachDataMediaUrls(
   data: Record<string, unknown>,
@@ -123,6 +128,17 @@ export function attachDataMediaUrls(
       }
       return it;
     });
+  }
+  if (Array.isArray(data.resources)) {
+    out.resources = (data.resources as Array<Record<string, unknown>>).map(
+      (r) => {
+        if (r && typeof r.fileMediaId === "string") {
+          const url = urls.get(r.fileMediaId);
+          if (url) return { ...r, fileUrl: url };
+        }
+        return r;
+      },
+    );
   }
   return out;
 }

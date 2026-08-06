@@ -19,7 +19,9 @@ const DEFAULT_LOCALE = "en";
  * real byline so editors can review it.
  */
 export function maskUnapprovedAuthor(
-  type: ContentType,
+  // Operates on persisted rows, whose stored type may be a legacy value no
+  // longer in `ContentType` (e.g. "resource"), so accept any stored type string.
+  type: string,
   data: Record<string, unknown>,
 ): Record<string, unknown> {
   if (type === "insight" && data.authorApproved !== true) {

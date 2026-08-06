@@ -1,37 +1,57 @@
 import { describe, it, expect } from "vitest";
-import { validateContent, SEGMENT_TO_TYPE, REGISTRY } from "@/lib/content/types";
+import {
+  validateContent,
+  SEGMENT_TO_TYPE,
+  isContentType,
+} from "@/lib/content/types";
 
-describe("resource collection", () => {
-  it("accepts a title, description and required file", () => {
-    const r = validateContent("resource", {
-      title: "2026 Leadership Report",
-      description: "Annual findings.",
-      fileMediaId: "11111111-1111-4111-8111-111111111111",
+const FILE_ID = "11111111-1111-4111-8111-111111111111";
+
+describe("embedded resources (case / solution / insight)", () => {
+  it("accepts a list of { title, fileMediaId } on a case", () => {
+    const r = validateContent("case", {
+      title: "Acme turnaround",
+      resources: [{ title: "2026 Leadership Report", fileMediaId: FILE_ID }],
     });
     expect(r.ok).toBe(true);
-    expect(r.data!.description).toBe("Annual findings.");
+    expect(r.data!.resources).toEqual([
+      { title: "2026 Leadership Report", fileMediaId: FILE_ID },
+    ]);
   });
 
-  it("requires a file", () => {
-    const r = validateContent("resource", { title: "No file" });
-    expect(r.ok).toBe(false);
-    expect(r.errors!.fileMediaId).toBeDefined();
+  it("defaults resources to an empty array when omitted", () => {
+    for (const type of ["case", "solution", "insight"] as const) {
+      const r = validateContent(type, {
+        title: "t",
+        // per-type required fields
+        problemStatement: "p",
+        body: "b",
+      });
+      expect(r.ok).toBe(true);
+      expect(r.data!.resources).toEqual([]);
+    }
   });
 
-  it("defaults description to empty and exposes the cover on list items", () => {
-    const r = validateContent("resource", {
+  it("requires a title and a file on every resource row", () => {
+    const missingFile = validateContent("solution", {
       title: "t",
-      fileMediaId: "11111111-1111-4111-8111-111111111111",
+      problemStatement: "p",
+      resources: [{ title: "No file" }],
     });
-    expect(r.data!.description).toBe("");
-    const item = REGISTRY.resource.toListItem({
+    expect(missingFile.ok).toBe(false);
+    expect(missingFile.errors!["resources.0.fileMediaId"]).toBeDefined();
+
+    const missingTitle = validateContent("insight", {
       title: "t",
-      coverMediaId: "c1",
+      body: "b",
+      resources: [{ fileMediaId: FILE_ID }],
     });
-    expect(item.coverMediaId).toBe("c1");
+    expect(missingTitle.ok).toBe(false);
+    expect(missingTitle.errors!["resources.0.title"]).toBeDefined();
   });
 
-  it("is reachable via the 'resources' collection segment", () => {
-    expect(SEGMENT_TO_TYPE.resources).toBe("resource");
+  it("no longer exposes a standalone 'resource' content type", () => {
+    expect(SEGMENT_TO_TYPE.resources).toBeUndefined();
+    expect(isContentType("resource")).toBe(false);
   });
 });

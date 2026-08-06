@@ -1,7 +1,12 @@
 import { z } from "zod";
 import { youtubeField } from "./youtube";
 
-/** Canonical content types (mirror db enum contentTypeEnum). */
+/**
+ * Canonical content types surfaced by the CMS. The db enum `contentTypeEnum`
+ * still carries a legacy `"resource"` value (resources are now embedded inside
+ * case/solution/insight, not a standalone collection); it is intentionally kept
+ * in the enum for any historical rows but no longer listed here.
+ */
 export const CONTENT_TYPES = [
   "case",
   "solution",
@@ -13,7 +18,6 @@ export const CONTENT_TYPES = [
   "page_awards",
   "page_legal",
   "page_home",
-  "resource",
 ] as const;
 
 export type ContentType = (typeof CONTENT_TYPES)[number];
@@ -54,6 +58,21 @@ const brandColorField = z.preprocess(
     .optional(),
 );
 
+/**
+ * Embedded downloadable resources — one row per file with a display title and
+ * the uploaded file's media id. Shared by case/solution/insight so every type
+ * stores resources identically. Defaults to an empty array (the field is
+ * optional); each row requires both a title and a file.
+ */
+const resourcesField = z
+  .array(
+    z.object({
+      title: z.string().min(1),
+      fileMediaId: z.uuid(),
+    }),
+  )
+  .default([]);
+
 // ---------------------------------------------------------------------------
 // Per-type field schemas (validate content_entries.data). Required fields are
 // enforced here and checked at publish time (FR-006/FR-007).
@@ -73,6 +92,8 @@ export const caseSchema = z.object({
   logoMediaId: z.uuid().optional(),
   // External YouTube reference (FR-801/802/803).
   youtube: youtubeField,
+  // Embedded downloadable files (replaces the standalone resource collection).
+  resources: resourcesField,
 });
 
 export const solutionSchema = z.object({
@@ -81,17 +102,19 @@ export const solutionSchema = z.object({
   problemStatement: z.string().min(1),
   body: z.string().default(""),
   // Proof / testimonials rendered on the solution page. Free-form quote blocks;
-  // caseSlug optionally links a block to a case study.
+  // every field is optional (caseSlug optionally links a block to a case study).
   proofRefs: z
     .array(
       z.object({
-        quote: z.string().min(1),
+        quote: z.string().default(""),
         author: z.string().default(""),
         role: z.string().default(""),
         caseSlug: z.string().optional(),
       }),
     )
     .default([]),
+  // Embedded downloadable files (replaces the standalone resource collection).
+  resources: resourcesField,
 });
 
 export const personSchema = z.object({
@@ -131,8 +154,8 @@ export const insightSchema = z.object({
   // Author-approval gate: the byline is masked to "Corporate DNA" on the public
   // read API until this is true (see maskUnapprovedAuthor in published.ts).
   authorApproved: z.boolean().default(false),
-  // Downloadable file/report attachment (PDF etc.).
-  attachmentMediaId: z.uuid().optional(),
+  // Embedded downloadable files (replaces the old single-attachment field).
+  resources: resourcesField,
 });
 
 export const page5hSchema = z.object({
@@ -185,13 +208,6 @@ export const pageHomeSchema = z.object({
   sponsoredPct: z.string().min(1),
 });
 
-export const resourceSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().default(""),
-  fileMediaId: z.uuid(),
-  coverMediaId: z.uuid().optional(),
-});
-
 // ---------------------------------------------------------------------------
 // Registry
 // ---------------------------------------------------------------------------
@@ -235,7 +251,7 @@ function titleSummary(data: Record<string, unknown>) {
 export const REGISTRY: Record<ContentType, ContentTypeDef> = {
   case: {
     type: "case",
-    label: "Case study",
+    label: "Client Impact",
     segment: "cases",
     singleton: false,
     schema: caseSchema as unknown as z.ZodType<Record<string, unknown>>,
@@ -317,14 +333,6 @@ export const REGISTRY: Record<ContentType, ContentTypeDef> = {
     // Statistics singleton has no title/name field, so give it a fixed label
     // instead of falling back to titleSummary's "Untitled".
     toListItem: () => ({ title: "Home statistics" }),
-  },
-  resource: {
-    type: "resource",
-    label: "Resource",
-    segment: "resources",
-    singleton: false,
-    schema: resourceSchema as unknown as z.ZodType<Record<string, unknown>>,
-    toListItem: titleSummary,
   },
 };
 

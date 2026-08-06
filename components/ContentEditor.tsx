@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { FieldSpec } from "@/lib/content/ui-fields";
+import type { FieldSpec, SubFieldSpec } from "@/lib/content/ui-fields";
 import {
   createAutosaveScheduler,
   shouldSave,
@@ -405,7 +405,24 @@ export default function ContentEditor({
     }
   }
 
-  const fieldErrors = fields.filter((f) => errors[f.name]);
+  // A field's error message for the summary: a direct error, or — for
+  // `objectList` fields — the first nested error (keyed like "proofRefs.0.quote"
+  // by the server) rewritten as a human-readable row reference.
+  function fieldErrorText(f: FieldSpec): string | undefined {
+    if (errors[f.name]) return errors[f.name];
+    const nestedKey = Object.keys(errors).find((k) =>
+      k.startsWith(`${f.name}.`),
+    );
+    if (!nestedKey) return undefined;
+    const [, idx, sub] = nestedKey.split(".");
+    const subLabel = f.itemFields?.find((s) => s.name === sub)?.label ?? sub;
+    const noun = f.itemNoun ?? "item";
+    return `${noun.charAt(0).toUpperCase()}${noun.slice(1)} #${
+      Number(idx) + 1
+    } — “${subLabel}” is required.`;
+  }
+
+  const fieldErrors = fields.filter((f) => fieldErrorText(f));
 
   return (
     <div className="max-w-2xl">
@@ -479,7 +496,7 @@ export default function ContentEditor({
                   <a href={`#${formId}-${f.name}`} className="underline">
                     {f.label}
                   </a>
-                  : {errors[f.name]}
+                  : {fieldErrorText(f)}
                 </li>
               ))}
             </ul>
@@ -500,11 +517,14 @@ export default function ContentEditor({
           const describedBy =
             [helpId, errorId].filter(Boolean).join(" ") || undefined;
 
-          // `facets`, `media` and `richtext` render controls that aren't a
-          // single native input, so they get a group label rather than a
-          // <label for> pointing at one input.
+          // `facets`, `media`, `richtext` and `objectList` render controls that
+          // aren't a single native input, so they get a group label rather than
+          // a <label for> pointing at one input.
           const isGroup =
-            f.kind === "facets" || f.kind === "media" || f.kind === "richtext";
+            f.kind === "facets" ||
+            f.kind === "media" ||
+            f.kind === "richtext" ||
+            f.kind === "objectList";
 
           return (
             <div key={f.name} className="flex flex-col gap-1.5">
@@ -737,6 +757,20 @@ export default function ContentEditor({
             }}
           />
         );
+      case "objectList":
+        return (
+          <ObjectListInput
+            fieldId={fieldId}
+            labelledBy={`${fieldId}-label`}
+            itemFields={f.itemFields ?? []}
+            itemNoun={f.itemNoun ?? "item"}
+            value={Array.isArray(val) ? (val as Record<string, string>[]) : []}
+            onChange={(next) => set(f.name, next)}
+            errors={errors}
+            errorPrefix={f.name}
+            disabled={locked}
+          />
+        );
       default:
         return (
           <input
@@ -862,6 +896,163 @@ function FacetsInput({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * A repeatable group editor: one card per row, each with its own labelled
+ * sub-fields — the friendly replacement for a raw JSON blob. The stored value
+ * stays an array of `{ [subField]: string }` objects, exactly what the server
+ * schema validates, so nothing downstream changes. Fully controlled from the
+ * parent's `data`, so a version restore re-renders the rows for free.
+ */
+function ObjectListInput({
+  fieldId,
+  labelledBy,
+  itemFields,
+  itemNoun,
+  value,
+  onChange,
+  errors,
+  errorPrefix,
+  disabled,
+}: {
+  fieldId: string;
+  labelledBy: string;
+  itemFields: SubFieldSpec[];
+  itemNoun: string;
+  value: Record<string, string>[];
+  onChange: (v: Record<string, string>[]) => void;
+  errors: Record<string, string>;
+  errorPrefix: string;
+  disabled?: boolean;
+}) {
+  const rows = Array.isArray(value) ? value : [];
+
+  function emptyRow(): Record<string, string> {
+    return Object.fromEntries(itemFields.map((sf) => [sf.name, ""]));
+  }
+
+  function updateRow(i: number, name: string, v: string) {
+    onChange(rows.map((r, idx) => (idx === i ? { ...r, [name]: v } : r)));
+  }
+
+  function removeRow(i: number) {
+    onChange(rows.filter((_, idx) => idx !== i));
+  }
+
+  return (
+    <div role="group" aria-labelledby={labelledBy} className="flex flex-col gap-3">
+      {rows.length === 0 && (
+        <p className="text-sm text-muted">
+          No {itemNoun}s yet — click “Add {itemNoun}” to create one.
+        </p>
+      )}
+
+      {rows.map((row, i) => (
+        <div
+          key={i}
+          className="flex flex-col gap-3 rounded-md border border-line bg-paper p-4"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted">
+              {itemNoun} #{i + 1}
+            </span>
+            <button
+              type="button"
+              onClick={() => removeRow(i)}
+              disabled={disabled}
+              className="text-xs font-medium text-danger underline disabled:opacity-50"
+            >
+              Remove
+            </button>
+          </div>
+
+          {itemFields.map((sf) => {
+            const subId = `${fieldId}-${i}-${sf.name}`;
+            const errKey = `${errorPrefix}.${i}.${sf.name}`;
+            const subError = errors[errKey];
+            const ring = subError ? "border-danger" : "";
+            const help = sf.help ? `${subId}-help` : undefined;
+            const err = subError ? `${subId}-error` : undefined;
+            const describedBy = [help, err].filter(Boolean).join(" ") || undefined;
+            return (
+              <div key={sf.name} className="flex flex-col gap-1">
+                <label
+                  id={`${subId}-label`}
+                  htmlFor={subId}
+                  className="text-xs font-medium text-ink"
+                >
+                  {sf.label}
+                  {sf.required && (
+                    <span className="text-danger" aria-hidden="true">
+                      {" "}
+                      *
+                    </span>
+                  )}
+                  {sf.required && <span className="sr-only"> (required)</span>}
+                </label>
+                {sf.help && (
+                  <p id={help} className="text-xs text-muted">
+                    {sf.help}
+                  </p>
+                )}
+                {sf.kind === "media" ? (
+                  <MediaPicker
+                    labelledBy={`${subId}-label`}
+                    describedBy={describedBy}
+                    value={row[sf.name] || undefined}
+                    onChange={(mediaId) => updateRow(i, sf.name, mediaId ?? "")}
+                    uploadField={sf.uploadField}
+                    disabled={disabled}
+                  />
+                ) : sf.kind === "textarea" ? (
+                  <textarea
+                    id={subId}
+                    className={`${textarea} ${ring}`}
+                    rows={2}
+                    aria-describedby={describedBy}
+                    aria-invalid={subError ? true : undefined}
+                    aria-required={sf.required || undefined}
+                    disabled={disabled}
+                    value={row[sf.name] ?? ""}
+                    onChange={(e) => updateRow(i, sf.name, e.target.value)}
+                  />
+                ) : (
+                  <input
+                    id={subId}
+                    className={`${input} ${ring}`}
+                    type={sf.kind === "url" ? "url" : "text"}
+                    aria-describedby={describedBy}
+                    aria-invalid={subError ? true : undefined}
+                    aria-required={sf.required || undefined}
+                    disabled={disabled}
+                    value={row[sf.name] ?? ""}
+                    onChange={(e) => updateRow(i, sf.name, e.target.value)}
+                  />
+                )}
+                {subError && (
+                  <p id={err} className="text-xs font-medium text-danger">
+                    {subError}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+
+      <div>
+        <button
+          type="button"
+          onClick={() => onChange([...rows, emptyRow()])}
+          disabled={disabled}
+          className={buttonSecondary}
+        >
+          + Add {itemNoun}
+        </button>
+      </div>
     </div>
   );
 }

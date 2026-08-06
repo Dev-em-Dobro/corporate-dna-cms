@@ -53,6 +53,18 @@ describe("collectDataMediaIds", () => {
     expect(collectDataMediaIds({ fileMediaId: "f1" })).toEqual(["f1"]);
     expect(collectDataMediaIds({ attachmentMediaId: "a1" })).toEqual(["a1"]);
   });
+
+  it("collects embedded resources[].fileMediaId", () => {
+    expect(
+      collectDataMediaIds({
+        resources: [
+          { title: "A", fileMediaId: "r1" },
+          { title: "no file" },
+          { title: "B", fileMediaId: "r2" },
+        ],
+      }),
+    ).toEqual(["r1", "r2"]);
+  });
 });
 
 describe("attachListItemMediaUrl", () => {
@@ -118,5 +130,22 @@ describe("attachDataMediaUrls", () => {
     expect(out.fileMediaId).toBe("f1");
     expect(out.fileUrl).toBe("https://cdn/f1.pdf");
     expect(out.attachmentUrl).toBe("https://cdn/a1.pdf");
+  });
+
+  it("adds resources[].fileUrl additively, leaving unresolved rows untouched", () => {
+    const map = new Map([["r1", "https://cdn/r1.pdf"]]);
+    const out = attachDataMediaUrls(
+      {
+        resources: [
+          { title: "A", fileMediaId: "r1" },
+          { title: "B", fileMediaId: "miss" },
+        ],
+      },
+      map,
+    );
+    expect(out.resources).toEqual([
+      { title: "A", fileMediaId: "r1", fileUrl: "https://cdn/r1.pdf" },
+      { title: "B", fileMediaId: "miss" },
+    ]);
   });
 });
