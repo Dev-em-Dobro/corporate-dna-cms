@@ -11,7 +11,10 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:migrate:demo": "drizzle-kit migrate --config drizzle.config.demo.ts",
     "seed:admin": "tsx scripts/seed-admin.ts",
+    "seed:demo": "tsx scripts/seed-demo.ts",
+    "dev:demo": "node scripts/dev-demo.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test"

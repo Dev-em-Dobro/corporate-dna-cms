@@ -82,7 +82,7 @@ export default function LoginForm({
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6 py-10">
       <p className="text-xs font-semibold uppercase tracking-widest text-brand-dark">
-        Corporate DNA
+        Demo Studio
       </p>
       <h1 className="mt-1 mb-6 text-2xl font-bold text-ink">CMS sign in</h1>
 

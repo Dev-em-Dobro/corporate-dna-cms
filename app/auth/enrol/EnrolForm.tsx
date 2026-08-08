@@ -68,7 +68,7 @@ export default function EnrolForm() {
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6 py-10">
       <p className="text-xs font-semibold uppercase tracking-widest text-brand-dark">
-        Corporate DNA
+        Demo Studio
       </p>
       <h1 className="mt-1 text-2xl font-bold text-ink">Set up your second factor</h1>
       <p className="mt-2 mb-6 text-sm text-muted">

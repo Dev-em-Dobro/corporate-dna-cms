@@ -112,7 +112,7 @@ export default function AdminNav({
         <div className="flex items-start justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-brand-dark">
-              Corporate DNA
+              Demo Studio
             </p>
             <p className="text-sm font-semibold text-ink">CMS</p>
           </div>

@@ -10,8 +10,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Corporate DNA CMS",
-  description: "Content management for the Corporate DNA platform.",
+  title: "Demo Studio CMS",
+  description: "Content management for the Demo Studio platform.",
   robots: { index: false, follow: false },
 };
 

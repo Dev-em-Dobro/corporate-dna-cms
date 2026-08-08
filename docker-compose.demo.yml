@@ -1,0 +1,27 @@
+# Throwaway local Postgres for recording the CMS demo creative (branch demo/creative).
+# Nothing here is production; it exists only to hold sanitized, fictitious content.
+#
+#   Bring up:   docker compose -f docker-compose.demo.yml up -d
+#   Tear down:  docker compose -f docker-compose.demo.yml down -v   # -v wipes the data
+services:
+  demo-db:
+    image: postgres:16
+    container_name: corporate-dna-demo-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      # Host 5544 -> container 5432, so this never collides with a local Postgres.
+      - "5544:5432"
+    volumes:
+      - ./docker/demo-init.sql:/docker-entrypoint-initdb.d/00-demo-init.sql:ro
+      - demo-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  demo-db-data:
