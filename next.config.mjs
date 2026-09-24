@@ -18,6 +18,17 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  // Sharp is loaded as a native addon. Turbopack externalizes it, but the
+  // Vercel function then misses libvips (libvips-cpp.so.8.18.3) and /api/media
+  // dies on startup. These globs copy the linux-x64 binaries into that function.
+  serverExternalPackages: ["sharp"],
+  outputFileTracingIncludes: {
+    "/api/media": [
+      "./node_modules/sharp/**/*",
+      "./node_modules/@img/sharp-linux-x64/**/*",
+      "./node_modules/@img/sharp-libvips-linux-x64/**/*",
+    ],
+  },
   async headers() {
     return [
       // Baseline security headers on every route.
