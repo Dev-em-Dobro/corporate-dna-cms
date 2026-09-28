@@ -57,7 +57,9 @@ const resolve = cache(async (): Promise<Resolved | null> => {
    * disables someone. This read is what makes FR-006 and FR-009 hold — and it
    * is not a new cost, the previous implementation did the same.
    */
-  const assurance = await resolveAssurance(supabase, claims.aal);
+  const assurance = profile.mfaRequired
+    ? await resolveAssurance(supabase, claims.aal)
+    : "satisfied";
 
   return {
     session: {
@@ -112,7 +114,6 @@ export async function requireSession(): Promise<SessionPayload> {
   if (r.profile.status === "disabled") {
     throw new AuthError(403, "Account disabled");
   }
-
   if (r.assurance === "none") {
     throw new AuthError(403, "Second factor enrolment required", "enrol");
   }
@@ -145,6 +146,9 @@ export async function requireEnrolmentBootstrap(): Promise<SessionPayload> {
   if (!r) throw new AuthError(401, "Authentication required");
   if (r.profile.status === "disabled") {
     throw new AuthError(403, "Account disabled");
+  }
+  if (!r.profile.mfaRequired) {
+    throw new AuthError(403, "Second factor is not required for this account");
   }
   if (r.assurance !== "none") {
     throw new AuthError(403, "A second factor is already enrolled");

@@ -1,5 +1,8 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { db } from "@/db";
+import { profiles } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { writeAudit } from "@/lib/audit/log";
 import { jsonOk, jsonError, clientMeta, handleError } from "@/lib/http";
 
@@ -25,7 +28,15 @@ export async function POST(req: NextRequest) {
     const claims = claimsData?.claims;
     if (!claims?.sub) return jsonError(401, "Authentication required");
 
-    const { data: factors } = await supabase.auth.mfa.listFactors();
+    const [profile] = await db
+      .select({ mfaRequired: profiles.mfaRequired })
+      .from(profiles)
+      .where(eq(profiles.id, claims.sub));
+    if (!profile) return jsonError(401, "Authentication required");
+
+    const { data: factors } = profile.mfaRequired
+      ? await supabase.auth.mfa.listFactors()
+      : { data: null };
     const verified = factors?.totp?.filter((f) => f.status === "verified") ?? [];
     if (verified.length > 0 && claims.aal !== "aal2") {
       return jsonError(403, "Second factor required", { next: "mfa" });

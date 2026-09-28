@@ -20,6 +20,7 @@ interface UserRow {
   email: string;
   role: "admin" | "editor";
   status: "active" | "invited" | "disabled";
+  mfaRequired: boolean;
   lastLoginAt: string | null;
 }
 interface AuditRow {
@@ -161,7 +162,7 @@ export default function UsersManager() {
     }
   }
 
-  async function patch(id: string, body: Record<string, string>) {
+  async function patch(id: string, body: Record<string, string | boolean>) {
     setError("");
     setNotice("");
     setWorking(true);
@@ -213,6 +214,20 @@ export default function UsersManager() {
     }
     setNotice(`${user.email} is now ${next}.`);
     patch(user.id, { status: next });
+  }
+
+  async function changeMfaRequirement(user: UserRow) {
+    const mfaRequired = !user.mfaRequired;
+    const ok = await confirm({
+      title: `${mfaRequired ? "Require" : "Temporarily exempt"} second factor for ${user.email}?`,
+      description: mfaRequired
+        ? "They will need to satisfy or enrol a second factor on their next sign-in."
+        : "This account can sign in without an authenticator until the requirement is turned back on.",
+      confirmLabel: mfaRequired ? "Require second factor" : "Allow password-only sign-in",
+      destructive: !mfaRequired,
+    });
+    if (!ok) return;
+    patch(user.id, { mfaRequired });
   }
 
   return (
@@ -335,9 +350,15 @@ export default function UsersManager() {
                     </select>
                   </td>
                   <td className="px-4 py-2">
-                    {/* Enrolment state is not mirrored locally — it lives in
-                        Supabase, and a cached copy here would silently drift
-                        out of date. What an admin can actually do is reset it. */}
+                    {/* Factor enrolment lives in Supabase; this control changes
+                        whether the account must satisfy that factor. */}
+                    <button
+                      type="button"
+                      onClick={() => changeMfaRequirement(u)}
+                      className={buttonSecondary}
+                    >
+                      {u.mfaRequired ? "Required" : "Temporarily off"}
+                    </button>
                     <button
                       type="button"
                       onClick={() => resetMfa(u)}

@@ -71,6 +71,20 @@ export async function POST(req: NextRequest) {
       return jsonError(401, "Invalid credentials");
     }
 
+    if (!profile.mfaRequired) {
+      await db
+        .update(profiles)
+        .set({ lastLoginAt: new Date() })
+        .where(eq(profiles.id, profile.id));
+      await writeAudit({
+        actorId: profile.id,
+        actorEmail: profile.email,
+        action: "auth.login",
+        metadata: { mfa: false, ...clientMeta(req) },
+      });
+      return jsonOk({ ok: true, next: "done" });
+    }
+
     // Distinguish "no factor enrolled" from "factor not satisfied yet". Both
     // present as aal1 and need opposite handling — enrol vs. challenge.
     const { data: factors } = await supabase.auth.mfa.listFactors();

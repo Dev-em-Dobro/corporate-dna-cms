@@ -1,0 +1,1 @@
+ALTER TABLE "profiles" ADD COLUMN "mfa_required" boolean DEFAULT true NOT NULL;

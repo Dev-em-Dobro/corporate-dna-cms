@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, foreignKey } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, boolean, foreignKey } from "drizzle-orm/pg-core";
 import { authUsers } from "drizzle-orm/supabase";
 import { roleEnum, userStatusEnum } from "./enums";
 
@@ -33,6 +33,7 @@ export const profiles = pgTable(
     email: text("email").notNull().unique(),
     role: roleEnum("role").notNull().default("editor"),
     status: userStatusEnum("status").notNull().default("invited"),
+    mfaRequired: boolean("mfa_required").notNull().default(true),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

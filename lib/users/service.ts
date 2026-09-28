@@ -21,6 +21,7 @@ export async function listUsers() {
       email: profiles.email,
       role: profiles.role,
       status: profiles.status,
+      mfaRequired: profiles.mfaRequired,
       lastLoginAt: profiles.lastLoginAt,
       createdAt: profiles.createdAt,
     })
@@ -75,6 +76,7 @@ export async function inviteUser(input: InviteUserInput): Promise<Profile> {
 export interface UpdateUserInput {
   role?: Role;
   status?: UserStatus;
+  mfaRequired?: boolean;
 }
 
 /**
@@ -111,7 +113,12 @@ export async function updateUser(
 
   const [profile] = await db
     .update(profiles)
-    .set({ role: nextRole, status: nextStatus, updatedAt: new Date() })
+    .set({
+      role: nextRole,
+      status: nextStatus,
+      ...(patch.mfaRequired === undefined ? {} : { mfaRequired: patch.mfaRequired }),
+      updatedAt: new Date(),
+    })
     .where(eq(profiles.id, id))
     .returning();
 
