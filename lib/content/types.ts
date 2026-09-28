@@ -279,7 +279,7 @@ export const REGISTRY: Record<ContentType, ContentTypeDef> = {
   },
   solution: {
     type: "solution",
-    label: "Solution",
+    label: "Services",
     segment: "solutions",
     singleton: false,
     schema: solutionSchema as unknown as z.ZodType<Record<string, unknown>>,

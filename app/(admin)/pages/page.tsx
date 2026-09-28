@@ -1,9 +1,5 @@
 import Link from "next/link";
 
-const SITE_PAGES: { key: string; label: string }[] = [
-  { key: "home", label: "Home statistics" },
-];
-
 const LEGAL_PAGES: { key: string; label: string }[] = [
   { key: "privacy", label: "Privacy" },
   { key: "cookies", label: "Cookies" },
@@ -43,7 +39,6 @@ export default function PagesList() {
       <p className="mb-5 text-sm text-muted">
         Singleton pages — one entry each.
       </p>
-      <PageGroup title="Site" pages={SITE_PAGES} />
       <PageGroup title="Legal" pages={LEGAL_PAGES} />
     </div>
   );

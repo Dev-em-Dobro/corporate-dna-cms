@@ -5,7 +5,7 @@ import AdminNav, { type NavItem } from "@/components/AdminNav";
 const NAV: (NavItem & { adminOnly?: boolean })[] = [
   { href: "/", label: "Dashboard" },
   { href: "/cases", label: "Client Impact" },
-  { href: "/solutions", label: "Solutions" },
+  { href: "/solutions", label: "Services" },
   { href: "/people", label: "People" },
   { href: "/regions", label: "Regions" },
   { href: "/insights", label: "Insights" },
