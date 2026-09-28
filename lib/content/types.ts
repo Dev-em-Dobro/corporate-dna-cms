@@ -18,6 +18,7 @@ export const CONTENT_TYPES = [
   "page_awards",
   "page_legal",
   "page_home",
+  "event",
 ] as const;
 
 export type ContentType = (typeof CONTENT_TYPES)[number];
@@ -158,6 +159,24 @@ export const insightSchema = z.object({
   resources: resourcesField,
 });
 
+export const eventSchema = z.object({
+  title: z.string().min(1),
+  category: z.string().min(1),
+  kind: z.string().min(1),
+  dateLabel: z.string().min(1),
+  location: z.string().default(""),
+  summary: z.string().default(""),
+  overview: z.array(z.string()).default([]),
+  topics: z.array(z.string()).default([]),
+  imageMediaId: z.uuid().optional(),
+  imageAlt: z.string().default(""),
+  links: z
+    .array(z.object({ label: z.string().min(1), href: z.string().min(1) }))
+    .default([]),
+  status: z.enum(["upcoming", "past"]).default("upcoming"),
+  featured: z.boolean().default(false),
+});
+
 export const page5hSchema = z.object({
   title: z.string().min(1),
   intro: z.string().default(""),
@@ -225,6 +244,7 @@ export interface ContentTypeDef {
     summary?: string;
     coverMediaId?: string;
     tags?: string[];
+    [key: string]: unknown;
   };
 }
 
@@ -296,6 +316,30 @@ export const REGISTRY: Record<ContentType, ContentTypeDef> = {
     singleton: false,
     schema: insightSchema as unknown as z.ZodType<Record<string, unknown>>,
     toListItem: titleSummary,
+  },
+  event: {
+    type: "event",
+    label: "Event",
+    segment: "events",
+    singleton: false,
+    schema: eventSchema as unknown as z.ZodType<Record<string, unknown>>,
+    toListItem: (d) => ({
+      title: String(d.title ?? "Untitled"),
+      summary: typeof d.summary === "string" ? d.summary : undefined,
+      coverMediaId:
+        typeof d.imageMediaId === "string" ? d.imageMediaId : undefined,
+      category: d.category,
+      kind: d.kind,
+      dateLabel: d.dateLabel,
+      location: d.location,
+      overview: d.overview,
+      topics: d.topics,
+      imageMediaId: d.imageMediaId,
+      imageAlt: d.imageAlt,
+      links: d.links,
+      status: d.status,
+      featured: d.featured,
+    }),
   },
   page_5h: {
     type: "page_5h",

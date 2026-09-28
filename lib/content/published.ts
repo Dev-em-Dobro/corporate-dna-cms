@@ -134,7 +134,12 @@ export async function listPublished(type: ContentType, params: ListParams = {}) 
   const urls = await resolveMediaUrls(
     baseItems.map((i) => i.coverMediaId).filter((v): v is string => !!v),
   );
-  const items = baseItems.map((i) => attachListItemMediaUrl(i, urls));
+  const items = baseItems.map((i) => {
+    const withMedia = attachListItemMediaUrl(i, urls);
+    return type === "event" && withMedia.coverUrl
+      ? { ...withMedia, imageUrl: withMedia.coverUrl }
+      : withMedia;
+  });
   return { items, page, pageSize, total };
 }
 

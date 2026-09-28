@@ -12,7 +12,8 @@ export type FieldKind =
   | "facets"
   | "boolean"
   | "json"
-  | "objectList";
+  | "objectList"
+  | "select";
 
 /**
  * A single sub-field inside an `objectList` row. Kept to the simple text-like
@@ -33,6 +34,7 @@ export interface FieldSpec {
   name: string;
   label: string;
   kind: FieldKind;
+  options?: { value: string; label: string }[];
   required?: boolean;
   help?: string;
   /**
@@ -190,6 +192,33 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
     { name: "authorApproved", label: "Author approved", kind: "boolean", help: "Until ticked, the byline shows as “Corporate DNA” on the site" },
     resourcesField,
   ],
+  event: [
+    { name: "title", label: "Title", kind: "text", required: true },
+    { name: "category", label: "Category", kind: "text", required: true, help: "For example cDNA, Nitin or Mike" },
+    { name: "kind", label: "Event type", kind: "text", required: true, help: "For example Speaker event or Past event" },
+    { name: "dateLabel", label: "Date", kind: "text", required: true, help: "Displayed date, e.g. 18 September 2026" },
+    { name: "location", label: "Location", kind: "text" },
+    { name: "status", label: "Status", kind: "select", options: [
+      { value: "upcoming", label: "Upcoming" },
+      { value: "past", label: "Past" },
+    ] },
+    { name: "featured", label: "Feature on events page", kind: "boolean" },
+    { name: "summary", label: "Summary", kind: "textarea" },
+    { name: "overview", label: "Overview paragraphs", kind: "stringList", help: "Add one paragraph per line." },
+    { name: "topics", label: "Topics", kind: "stringList", help: "Add one topic per line." },
+    { name: "imageMediaId", label: "Event image", kind: "media" },
+    { name: "imageAlt", label: "Image description", kind: "text" },
+    {
+      name: "links",
+      label: "Related links",
+      kind: "objectList",
+      itemNoun: "link",
+      itemFields: [
+        { name: "label", label: "Label", kind: "text", required: true },
+        { name: "href", label: "URL or site path", kind: "text", required: true },
+      ],
+    },
+  ],
   page_5h: [
     { name: "title", label: "Title", kind: "text", required: true },
     { name: "intro", label: "Intro", kind: "richtext" },
@@ -249,6 +278,9 @@ export function emptyData(type: ContentType): Record<string, unknown> {
         break;
       case "objectList":
         base[f.name] = [];
+        break;
+      case "select":
+        base[f.name] = f.options?.[0]?.value ?? "";
         break;
       default:
         base[f.name] = "";

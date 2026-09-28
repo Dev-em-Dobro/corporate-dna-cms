@@ -680,6 +680,21 @@ export default function ContentEditor({
     const ring = invalid ? "border-danger" : "";
 
     switch (f.kind) {
+      case "select":
+        return (
+          <select
+            {...a11y}
+            className={`${select} ${ring}`}
+            value={String(val ?? "")}
+            onChange={(e) => set(f.name, e.target.value)}
+          >
+            {(f.options ?? []).map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        );
       case "textarea":
         return (
           <textarea
