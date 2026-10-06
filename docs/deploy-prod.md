@@ -34,8 +34,15 @@ depende dessa allowlist.
 Replicar as do `.env.local`: `DATABASE_URL`, `DIRECT_URL`, `NEXT_PUBLIC_SUPABASE_URL`,
 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `AUTH_SECRET`,
 `PREVIEW_TOKEN_SECRET`, `WEBHOOK_SIGNING_KEY`, `READ_API_KEY`, `RESEND_API_KEY`,
+`LEAD_NOTIFY_FROM` (remetente de um domínio verificado no Resend),
 os `BUNNY_*`, e `SITE_URL` = **URL do site público** de produção (usado só nos
 links de preview, em `app/api/admin/[type]/[id]/preview/route.ts`).
+
+O formulário do site grava o contato no CMS e envia um email para
+`ceo-office@corporatednaconsulting.com` e `info@corporatednaconsulting.com`.
+O envio exige `RESEND_API_KEY` e `LEAD_NOTIFY_FROM` (ou `EMAIL_FROM`) no ambiente
+do CMS. Falhas no envio são registradas nos logs com o ID do contato; o contato
+continua salvo no banco.
 
 ### 5. Templates de e-mail
 Aplicar o mesmo ajuste do fluxo `/auth/confirm` também em **Reset Password**

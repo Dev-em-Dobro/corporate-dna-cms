@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { leads } from "@/db/schema";
 import { leadInputSchema } from "@/lib/leads/schema";
 import { dispatchLeadWebhook } from "@/lib/leads/webhook";
+import { notifyLead } from "@/lib/leads/notify";
 import {
   jsonOk,
   jsonError,
@@ -67,6 +68,9 @@ export async function POST(req: NextRequest) {
         userAgent: lead.user_agent ?? userAgent,
       })
       .returning({ id: leads.id });
+
+    // Wait for the provider response before the serverless request finishes.
+    await notifyLead(row.id, lead);
 
     // Optional downstream forward — never blocks or fails the write (nice-to-have).
     void dispatchLeadWebhook({ id: row.id, ...lead });
