@@ -36,6 +36,11 @@ const optionalEmail = z.preprocess(
   (v) => (v === "" ? undefined : v),
   z.email().optional(),
 );
+/** Optional media ref: MediaPicker clears to "", which must not fail as uuid. */
+const optionalUuid = z.preprocess(
+  (v) => (v === "" || v === null ? undefined : v),
+  z.uuid().optional(),
+);
 
 /**
  * Structured tag list (FR-817). Trims each tag, drops blanks, de-duplicates, and
@@ -145,7 +150,9 @@ export const insightSchema = z.object({
   author: z.string().default(""),
   excerpt: z.string().default(""),
   body: z.string().min(1),
-  coverMediaId: z.uuid().optional(),
+  // Cover is optional: articles can publish without an image (card uses a
+  // grey placeholder; detail hero falls back to the plain ink band).
+  coverMediaId: optionalUuid,
   publishedDate: z.string().optional(),
   youtube: youtubeField,
   // Optional external-attribution fields (status review §10).

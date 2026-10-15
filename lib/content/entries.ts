@@ -32,7 +32,9 @@ function collectMediaIds(
 ): string[] {
   const ids: string[] = [];
   const push = (v: unknown) => {
-    if (typeof v === "string") ids.push(v);
+    // Skip blanks: the form clears media to "" and that must not fail publish
+    // as "referenced media not found" for optional covers (e.g. insights).
+    if (typeof v === "string" && v.trim()) ids.push(v);
   };
   push(data.coverMediaId);
   push(data.photoMediaId);

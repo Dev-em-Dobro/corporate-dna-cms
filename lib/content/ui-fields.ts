@@ -178,7 +178,12 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
     { name: "author", label: "Author", kind: "text", help: "Shown as “By …” on the insight" },
     { name: "excerpt", label: "Excerpt", kind: "richtext" },
     { name: "body", label: "Body", kind: "richtext", required: true },
-    { name: "coverMediaId", label: "Cover image", kind: "media" },
+    {
+      name: "coverMediaId",
+      label: "Cover image",
+      kind: "media",
+      help: "Optional — leave blank to publish without a cover image",
+    },
     {
       name: "youtube",
       label: "YouTube video (URL)",

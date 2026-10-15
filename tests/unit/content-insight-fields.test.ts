@@ -35,4 +35,17 @@ describe("insight optional fields", () => {
   it("seeds authorApproved:false in emptyData", () => {
     expect(emptyData("insight").authorApproved).toBe(false);
   });
+
+  it("allows publishing without a cover image (blank MediaPicker → \"\")", () => {
+    const r = validateContent("insight", { ...base, coverMediaId: "" });
+    expect(r.ok).toBe(true);
+    expect(r.data!.coverMediaId).toBeUndefined();
+  });
+
+  it("keeps a real coverMediaId uuid when provided", () => {
+    const id = "5c217e87-4585-4c25-924c-5c7d51c53423";
+    const r = validateContent("insight", { ...base, coverMediaId: id });
+    expect(r.ok).toBe(true);
+    expect(r.data!.coverMediaId).toBe(id);
+  });
 });
