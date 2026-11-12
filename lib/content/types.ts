@@ -175,8 +175,9 @@ export const eventSchema = z.object({
   summary: z.string().default(""),
   overview: z.array(z.string()).default([]),
   topics: z.array(z.string()).default([]),
-  imageMediaId: z.uuid().optional(),
+  imageMediaId: optionalUuid,
   imageAlt: z.string().default(""),
+  imageContain: z.boolean().default(false),
   links: z
     .array(z.object({ label: z.string().min(1), href: z.string().min(1) }))
     .default([]),
@@ -343,6 +344,7 @@ export const REGISTRY: Record<ContentType, ContentTypeDef> = {
       topics: d.topics,
       imageMediaId: d.imageMediaId,
       imageAlt: d.imageAlt,
+      imageContain: d.imageContain,
       links: d.links,
       status: d.status,
       featured: d.featured,

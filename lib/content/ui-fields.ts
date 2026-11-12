@@ -213,6 +213,7 @@ export const FIELDS: Record<ContentType, FieldSpec[]> = {
     { name: "topics", label: "Topics", kind: "stringList", help: "Add one topic per line." },
     { name: "imageMediaId", label: "Event image", kind: "media" },
     { name: "imageAlt", label: "Image description", kind: "text" },
+    { name: "imageContain", label: "Show the whole image", kind: "boolean", help: "Enable for flyers so dates, logos and text are not cropped." },
     {
       name: "links",
       label: "Related links",
