@@ -113,3 +113,5 @@ To enable real data:
 2. Set the server environment variables `GA4_PROPERTY_ID` (numeric property ID), `GA4_CLIENT_EMAIL` and `GA4_PRIVATE_KEY` in the CMS deployment. Store the key in the deployment secret store. Real newlines and escaped newline sequences are supported.
 3. In GA4, register event-scoped custom dimensions for the parameters `event_slug`, `link_text` and `link_type`. Deploy the website tracking that sends `event_page_view` and `event_cta_click`. Check DebugView after consenting on the site. Visit the Events listing, open Her Leadership DNA and click Programme prospectus. The listing uses `events_index` and the PDF click should carry the event slug and `link_type=pdf`.
 4. Once the property has processed the events, compare both counts with GA4 for the same dates. Earlier data may lack the registered dimensions.
+
+After changing the GA4 variables in Vercel’s **Production** environment, deploy the CMS again. When the production deployment is ready, sign in to the CMS and open **Events → Event performance** to verify the connection.
