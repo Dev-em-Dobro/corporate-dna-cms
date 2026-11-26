@@ -5,7 +5,7 @@ import { listEntries } from "@/lib/content/entries";
 import { activeLocales, getDefaultLocale } from "@/lib/content/locales";
 import { groupByTranslationGroup } from "@/lib/content/translations";
 import { StatusBadge } from "@/components/ui/Feedback";
-import { buttonPrimary } from "@/components/ui/styles";
+import { buttonPrimary, buttonSecondary } from "@/components/ui/styles";
 import AddTranslationButton from "@/components/AddTranslationButton";
 import RowActions from "@/components/admin/RowActions";
 import PeopleReorderList from "@/components/admin/PeopleReorderList";
@@ -46,10 +46,12 @@ export default async function CollectionList({
     <div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-ink">{def.label}</h1>
-        <Link href={`/${collection}/new`} className={buttonPrimary}>
-          New
-          <span className="sr-only"> {def.label}</span>
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          {type === "event" && <Link className={buttonSecondary} href="/events/report/performance">Event performance</Link>}
+          <Link href={`/${collection}/new`} className={buttonPrimary}>
+            New<span className="sr-only"> {def.label}</span>
+          </Link>
+        </div>
       </div>
 
       {entries.length === 0 ? (

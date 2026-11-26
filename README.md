@@ -102,3 +102,14 @@ npm test                             # unit + (with a dedicated test target) int
 The seeded admin lands in the **bootstrap state**: on first sign-in they are routed to enrol their
 own TOTP factor. See `docs/handover.md` for deploy, backup/recovery, the test-target rules, and
 site-integration details.
+
+### Event performance in the CMS
+
+Open **Events → Event performance** with an authenticated CMS account. The report reads aggregate GA4 data on the server. Periods of 7, 30 or 90 days include today in the property's time zone. PDF clicks are a subset of event button clicks. Counts depend on analytics consent and GA4 processing.
+
+To enable real data:
+
+1. Enable the Google Analytics Data API for the integration project and grant its service account **Viewer** access to the site's GA4 property.
+2. Set the server environment variables `GA4_PROPERTY_ID` (numeric property ID), `GA4_CLIENT_EMAIL` and `GA4_PRIVATE_KEY` in the CMS deployment. Store the key in the deployment secret store. Real newlines and escaped newline sequences are supported.
+3. In GA4, register event-scoped custom dimensions for the parameters `event_slug`, `link_text` and `link_type`. Deploy the website tracking that sends `event_page_view` and `event_cta_click`. Check DebugView after consenting on the site. Visit the Events listing, open Her Leadership DNA and click Programme prospectus. The listing uses `events_index` and the PDF click should carry the event slug and `link_type=pdf`.
+4. Once the property has processed the events, compare both counts with GA4 for the same dates. Earlier data may lack the registered dimensions.
