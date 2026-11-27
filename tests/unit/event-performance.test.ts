@@ -89,6 +89,28 @@ describe("event performance", () => {
     expect(report).toEqual({ status: "ready", clickSource: "downloads", listingPdfDownloads: 0, listingViews: 0, events: [] });
     expect(renderToStaticMarkup(createElement(EventPerformanceReport, { days: 7, report }))).toContain("No individual event activity");
   });
+  it("includes published events without activity and preserves historical GA rows", () => {
+    const catalog = { incomplete: false, events: [
+      { slug: "upcoming", title: "Upcoming summit" },
+      { slug: "conference", title: "Annual conference", date: "June 2026" },
+    ] };
+    const report = { status: "ready", clickSource: "downloads", listingViews: 16, listingPdfDownloads: 0, events: [
+      { slug: "conference", views: 2, clicks: 0, pdfClicks: 0, buttons: [] },
+      { slug: "past-forum", views: 1, clicks: 0, pdfClicks: 0, buttons: [] },
+    ] } as const;
+    const activity = { ...report, events: report.events.map(e => ({ ...e, buttons: [] })) };
+    const render = (result: typeof activity) => renderToStaticMarkup(createElement(EventPerformanceReport, { days: 7, report: result, catalog }));
+    const html = render(activity);
+    expect(html.match(/Annual conference/g)).toHaveLength(1);
+    expect(html).toContain("Upcoming summit");
+    expect(html).toContain("past forum");
+    expect(html).toContain("June 2026");
+    const emptyPeriod = render({ ...activity, events: [] });
+    expect(emptyPeriod).toContain("Upcoming summit");
+    expect(emptyPeriod).toContain("Annual conference");
+    expect(emptyPeriod).not.toContain("No individual event activity");
+    expect(renderToStaticMarkup(createElement(EventPerformanceReport, { days: 7, report: { status: "unavailable" }, catalog }))).not.toContain("Upcoming summit");
+  });
   it.each([[400,"setup"],[403,"setup"],[429,"unavailable"],[503,"unavailable"]])("distinguishes GA response %s from zero activity", async (code, status) => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: Number(code) })));
     expect(await loadEventPerformance(30)).toEqual({ status });
