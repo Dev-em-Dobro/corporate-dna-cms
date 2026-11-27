@@ -31,7 +31,7 @@ export type EventPerformance = {
   buttons: { label: string; clicks: number }[];
 };
 export type PerformanceResult =
-  | { status: "ready"; listingViews: number; events: EventPerformance[] }
+  | { status: "ready"; listingViews: number; events: EventPerformance[]; clickSource: "buttons" | "downloads"; listingPdfDownloads: number }
   | { status: "unconfigured" | "setup" | "unavailable" };
 
 function dimension(row: Row, index: number, fallback: string) {
@@ -39,7 +39,8 @@ function dimension(row: Row, index: number, fallback: string) {
   return !value || value === "(not set)" ? fallback : value;
 }
 
-export function summarizePerformance(views: Row[], clicks: Row[]): PerformanceResult {
+function summarizePerformance(activity: Row[], clicks: Row[]): PerformanceResult {
+  const clickSource = clicks.length ? "buttons" : "downloads";
   const events = new Map<string, EventPerformance>();
   function forSlug(slug: string) {
     const event = events.get(slug) ?? { slug, views: 0, clicks: 0, pdfClicks: 0, buttons: [] };
@@ -47,11 +48,21 @@ export function summarizePerformance(views: Row[], clicks: Row[]): PerformanceRe
     return event;
   }
   let listingViews = 0;
-  for (const row of views) {
-    const slug = dimension(row, 0, "(unassigned)");
+  let listingPdfDownloads = 0;
+  for (const row of activity) {
+    const path = dimension(row, 0, "");
+    const match = /^\/events(?:\/([^/]+))?\/?$/.exec(path);
+    if (!match) continue;
+    const slug = match[1];
+    const kind = dimension(row, 1, "");
     const count = Number(row.metricValues[0].value);
-    if (slug === "events_index") listingViews += count;
-    else forSlug(slug).views += count;
+    if (kind === "page_view") {
+      if (slug) forSlug(slug).views += count;
+      else listingViews += count;
+    } else if (kind === "file_download" && clickSource === "downloads") {
+      if (slug) forSlug(slug).pdfClicks += count;
+      else listingPdfDownloads += count;
+    }
   }
   for (const row of clicks) {
     const event = forSlug(dimension(row, 0, "(unassigned)"));
@@ -66,12 +77,32 @@ export function summarizePerformance(views: Row[], clicks: Row[]): PerformanceRe
   for (const event of events.values()) {
     event.buttons.sort((a, b) => b.clicks - a.clicks || a.label.localeCompare(b.label));
   }
-  return { status: "ready", listingViews, events: [...events.values()].sort((a, b) => b.views - a.views || b.clicks - a.clicks || a.slug.localeCompare(b.slug)) };
+  return { status: "ready", listingViews, listingPdfDownloads, clickSource, events: [...events.values()].sort((a, b) => b.views - a.views || b.clicks - a.clicks || a.slug.localeCompare(b.slug)) };
 }
 
 class SetupError extends Error {}
 
-async function fetchRows(property: string, token: string, days: Period, eventName: string, names: string[]) {
+function stringFilter(fieldName: string, value: string, matchType: "EXACT" | "FULL_REGEXP" = "EXACT") {
+  return { filter: { fieldName, stringFilter: { matchType, value } } };
+}
+
+const productionHost = { filter: { fieldName: "hostName", inListFilter: {
+  values: ["corporatednaconsulting.com", "www.corporatednaconsulting.com"],
+} } };
+const eventPages = stringFilter("pagePath", "/events(/[^/]+)?/?", "FULL_REGEXP");
+const eventActivity = { andGroup: { expressions: [
+  productionHost, eventPages,
+  { orGroup: { expressions: [
+    stringFilter("eventName", "page_view"),
+    stringFilter("eventName", "event_cta_click"),
+    { andGroup: { expressions: [stringFilter("eventName", "file_download"), stringFilter("fileExtension", "pdf")] } },
+  ] } },
+] } };
+const detailedClicks = { andGroup: { expressions: [productionHost, eventPages, stringFilter("eventName", "event_cta_click")] } };
+
+class MissingClickDimension extends Error {}
+
+async function fetchRows(property: string, token: string, days: Period, names: string[], dimensionFilter: typeof eventActivity | typeof detailedClicks) {
   const rows: Row[] = [];
   do {
     const response = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${property}:runReport`, {
@@ -83,11 +114,15 @@ async function fetchRows(property: string, token: string, days: Period, eventNam
         dateRanges: [{ startDate: `${days - 1}daysAgo`, endDate: "today" }],
         dimensions: names.map(name => ({ name })),
         metrics: [{ name: "eventCount" }],
-        dimensionFilter: { filter: { fieldName: "eventName", stringFilter: { matchType: "EXACT", value: eventName } } },
+        dimensionFilter,
         orderBys: names.map(dimensionName => ({ dimension: { dimensionName } })),
         limit: "10000", offset: String(rows.length),
       }),
     });
+    if (response.status === 400 && names.includes(slugDimension)) {
+      const failure = await response.json().catch(() => null);
+      if (names.some(name => String(failure?.error?.message).includes(name))) throw new MissingClickDimension();
+    }
     if ([400, 401, 403, 404].includes(response.status)) throw new SetupError();
     if (!response.ok) throw new Error("Analytics report unavailable");
     const report = responseSchema.parse(await response.json());
@@ -113,11 +148,16 @@ export async function loadEventPerformance(days: Period): Promise<PerformanceRes
     credentials ??= new JWT({ email, key: key.replace(/\\n/g, "\n"), scopes: ["https://www.googleapis.com/auth/analytics.readonly"] });
     const { token } = await credentials.getAccessToken();
     if (!token) return { status: "setup" };
-    const [views, clicks] = await Promise.all([
-      fetchRows(property, token, days, "event_page_view", [slugDimension]),
-      fetchRows(property, token, days, "event_cta_click", [slugDimension, buttonDimension, typeDimension]),
-    ]);
-    return summarizePerformance(views, clicks);
+    const activity = await fetchRows(property, token, days, ["pagePath", "eventName"], eventActivity);
+    let clicks: Row[] = [];
+    if (activity.some(row => dimension(row, 1, "") === "event_cta_click")) {
+      try {
+        clicks = await fetchRows(property, token, days, [slugDimension, buttonDimension, typeDimension], detailedClicks);
+      } catch (error) {
+        if (!(error instanceof MissingClickDimension)) throw error;
+      }
+    }
+    return summarizePerformance(activity, clicks);
   } catch (error) {
     return { status: error instanceof SetupError ? "setup" : "unavailable" };
   }

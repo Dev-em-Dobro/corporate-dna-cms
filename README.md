@@ -105,13 +105,14 @@ site-integration details.
 
 ### Event performance in the CMS
 
-Open **Events → Event performance** with an authenticated CMS account. The report reads aggregate GA4 data on the server. Periods of 7, 30 or 90 days include today in the property's time zone. PDF clicks are a subset of event button clicks. Counts depend on analytics consent and GA4 processing.
+Open **Events → Event performance** with an authenticated CMS account. The report reads aggregate GA4 data on the server. Periods of 7, 30 or 90 days include today in the property's time zone. Page views use GA4’s standard page views on the production website. The report shows recorded PDF downloads when no button breakdown is available. Counts depend on analytics consent and GA4 processing.
 
 To enable real data:
 
 1. Enable the Google Analytics Data API for the integration project and grant its service account **Viewer** access to the site's GA4 property.
 2. Set the server environment variables `GA4_PROPERTY_ID` (numeric property ID), `GA4_CLIENT_EMAIL` and `GA4_PRIVATE_KEY` in the CMS deployment. Store the key in the deployment secret store. Real newlines and escaped newline sequences are supported.
-3. In GA4, register event-scoped custom dimensions for the parameters `event_slug`, `link_text` and `link_type`. Deploy the website tracking that sends `event_page_view` and `event_cta_click`. Check DebugView after consenting on the site. Visit the Events listing, open Her Leadership DNA and click Programme prospectus. The listing uses `events_index` and the PDF click should carry the event slug and `link_type=pdf`.
-4. Once the property has processed the events, compare both counts with GA4 for the same dates. Earlier data may lack the registered dimensions.
+3. Compare the totals with GA4 for the same dates. Standard views and recorded PDF downloads work with the existing property. GA4 enhanced measurement must capture file downloads for PDF clicks to appear.
+
+Optional button breakdown: when the site sends `event_cta_click` and GA4 has the event-scoped dimensions `event_slug`, `link_text` and `link_type`, the report shows recorded clicks by button. In this view PDF clicks are a subset of button clicks.
 
 After changing the GA4 variables in Vercel’s **Production** environment, deploy the CMS again. When the production deployment is ready, sign in to the CMS and open **Events → Event performance** to verify the connection.
