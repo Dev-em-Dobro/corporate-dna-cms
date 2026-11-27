@@ -16,6 +16,7 @@ export default function EventPerformanceReport({ days, report, titles = {} }: {
   report: PerformanceResult;
   titles?: Record<string, string>;
 }) {
+  const showButtons = report.status === "ready" && report.clickSource === "buttons";
   return <div className="mx-auto max-w-6xl space-y-6">
     <Link href="/events" className="text-sm font-semibold text-brand-dark underline">Back to Events</Link>
     <header className="flex flex-wrap items-end justify-between gap-4">
@@ -35,7 +36,9 @@ export default function EventPerformanceReport({ days, report, titles = {} }: {
       <dl className="grid gap-3 sm:grid-cols-3">{[
         ["Events listing views", report.listingViews],
         ["Event page views", report.events.reduce((sum, event) => sum + event.views, 0)],
-        ["Event button clicks", report.events.reduce((sum, event) => sum + event.clicks, 0)],
+        showButtons
+          ? ["Event button clicks", report.events.reduce((sum, event) => sum + event.clicks, 0)]
+          : ["Recorded PDF downloads", report.events.reduce((sum, event) => sum + event.pdfClicks, report.listingPdfDownloads)],
       ].map(([label, value]) => <div key={label} className="rounded-lg border border-line-strong p-4">
         <dt className="text-sm text-muted">{label}</dt><dd className="mt-1 text-3xl font-bold tabular-nums">{format.format(Number(value))}</dd>
       </div>)}</dl>
@@ -43,15 +46,15 @@ export default function EventPerformanceReport({ days, report, titles = {} }: {
         {report.events.length === 0 ? <p className="rounded-lg border border-line-strong p-5 text-sm">No individual event activity was reported for the last {days} days.</p> :
           <div className="overflow-x-auto rounded-lg border border-line-strong">
             <table className="w-full min-w-[32rem] text-left text-sm"><thead className="bg-paper">
-              <tr><th scope="col" className="p-3">Event</th>{["Page views", "Button clicks", "PDF clicks"].map(label => <th key={label} scope="col" className="p-3 text-right">{label}</th>)}</tr>
+              <tr><th scope="col" className="p-3">Event</th>{(showButtons ? ["Page views", "Button clicks", "PDF clicks"] : ["Page views", "Recorded PDF downloads"]).map(label => <th key={label} scope="col" className="p-3 text-right">{label}</th>)}</tr>
             </thead><tbody>{report.events.map(event => <tr key={event.slug} className="border-t border-line align-top">
               <th scope="row" className="p-3 font-medium"><span>{Object.hasOwn(titles, event.slug) ? titles[event.slug] : eventLabel(event.slug)}</span>
                 {event.buttons.length > 0 && <details className="mt-1"><summary className="w-fit cursor-pointer font-medium text-brand-dark">Clicks by button</summary>
                   <dl className="mt-2 max-w-xs space-y-1">{event.buttons.map(button => <div key={button.label} className="flex justify-between gap-4"><dt className="font-normal">{button.label}</dt><dd className="tabular-nums">{format.format(button.clicks)}</dd></div>)}</dl></details>}
-              </th>{[event.views, event.clicks, event.pdfClicks].map((n, index) => <td key={index} className="p-3 text-right tabular-nums">{format.format(n)}</td>)}
+              </th>{(showButtons ? [event.views, event.clicks, event.pdfClicks] : [event.views, event.pdfClicks]).map((n, index) => <td key={index} className="p-3 text-right tabular-nums">{format.format(n)}</td>)}
             </tr>)}</tbody></table>
           </div>}
-        <p className="mt-3 text-sm text-muted">PDF clicks are included in button clicks. They count requests to open a file. Page views include repeat visits.</p>
+        <p className="mt-3 text-sm text-muted">{showButtons ? "PDF clicks are included in button clicks. They count requests to open a file." : "Recorded PDF downloads count clicks on PDF links captured by Google Analytics on the listing and individual event pages. Button-level data is unavailable for this period."} Page views include repeat visits.</p>
       </section>
     </>}
   </div>;
